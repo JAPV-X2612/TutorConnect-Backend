@@ -1,0 +1,46 @@
+# Dependencias
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Archivos de compilación
+dist/
+build/
+
+# Archivos de entorno
+.env
+.env.*
+!.env.example
+
+# Archivos de prueba
+coverage/
+*.log
+
+# Archivos de IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Docker
+Dockerfile
+docker-compose*.yml
+.dockerignore
+
+# Otros
+*.md
+!README.md
+.editorconfig
+.prettierrc
+.eslintrc.js
+eslint.config.mjs
+
