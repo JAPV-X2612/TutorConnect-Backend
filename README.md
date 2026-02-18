@@ -2,6 +2,38 @@
 
 Backend del sistema **TutorConnect** desarrollado con NestJS siguiendo una arquitectura de monolito modular.
 
+---
+
+## 🚀 Inicio Rápido
+
+**¿Primera vez aquí?** Empieza con estas guías:
+
+| 📖 Guía | 📝 Descripción | 👥 Para Quién |
+|---------|---------------|---------------|
+| **[RESUMEN.md](./RESUMEN.md)** | 🌟 **Comienza aquí** - Estado del proyecto y overview | Todos |
+| **[SETUP.md](./SETUP.md)** | Guía completa de configuración y troubleshooting | Desarrolladores |
+| **[QUICKSTART.md](./QUICKSTART.md)** | Inicio rápido en 3 pasos | Principiantes |
+| **[DOCKER.md](./DOCKER.md)** | Guía detallada de Docker | Usuarios Docker |
+| **[RUN-WITHOUT-DOCKER.md](./RUN-WITHOUT-DOCKER.md)** | Ejecutar sin Docker | Sin Docker |
+
+### Comandos Esenciales
+
+```bash
+# Verificar que todo está configurado
+npm run verify
+
+# Con Docker (requiere Docker Desktop)
+npm run docker:up          # Iniciar todo
+npm run docker:logs        # Ver logs
+
+# Sin Docker (requiere PostgreSQL local)
+npm run start:dev          # Modo desarrollo
+```
+
+**Verificar que funciona**: http://localhost:3000/health
+
+---
+
 ## 📋 Descripción
 
 TutorConnect es una plataforma diseñada para conectar estudiantes con tutores especializados. Este repositorio contiene el backend que proporciona APIs REST para:
@@ -11,6 +43,14 @@ TutorConnect es una plataforma diseñada para conectar estudiantes con tutores e
 - Perfiles académicos de tutores
 - Búsqueda y matching inteligente con IA
 - Sistema de reservas de tutorías
+
+## ✅ Estado del Proyecto
+
+- ✅ **Docker**: Completamente configurado
+- ✅ **PostgreSQL**: Integrado y listo
+- ✅ **TypeORM**: Actualizado a versión 0.3.x
+- ✅ **Health Check**: API funcionando
+- ✅ **Dependencias**: Resueltas y compatibles con NestJS 11
 
 ## 🏗️ Arquitectura
 
@@ -142,7 +182,119 @@ NODE_ENV=development
 
 ⚠️ **Importante**: No subas el archivo `.env` a control de versiones. Ya está incluido en `.gitignore`.
 
-## ▶️ Ejecutar el Proyecto
+## 🐳 Ejecutar con Docker (Recomendado)
+
+### Requisitos Previos para Docker
+
+- **Docker Desktop**: Última versión
+- **Docker Compose**: Incluido en Docker Desktop
+
+### Opción 1: Entorno Completo (App + PostgreSQL)
+
+Esta es la forma más rápida de ejecutar todo el proyecto con base de datos incluida:
+
+```bash
+# Construir y ejecutar todos los servicios
+docker-compose up -d
+
+# Ver logs en tiempo real
+docker-compose logs -f
+
+# Ver logs de un servicio específico
+docker-compose logs -f app
+docker-compose logs -f postgres
+```
+
+Esto iniciará:
+- **PostgreSQL** en el puerto `5432`
+- **Backend NestJS** en el puerto `3000`
+
+### Opción 2: Solo Base de Datos (para desarrollo local)
+
+Si prefieres ejecutar la aplicación localmente pero usar PostgreSQL en Docker:
+
+```bash
+# Iniciar solo PostgreSQL
+docker-compose -f docker-compose.dev.yml up -d
+
+# Luego ejecutar la app localmente
+npm run start:dev
+```
+
+### Comandos Útiles de Docker
+
+```bash
+# Detener todos los servicios
+docker-compose down
+
+# Detener y eliminar volúmenes (⚠️ esto borrará los datos de la BD)
+docker-compose down -v
+
+# Reconstruir las imágenes
+docker-compose up -d --build
+
+# Ver estado de los contenedores
+docker-compose ps
+
+# Acceder a la shell de PostgreSQL
+docker exec -it tutorconnect-postgres psql -U postgres -d tutorconnect
+
+# Ver uso de recursos
+docker stats
+```
+
+### Verificar que Docker Está Funcionando
+
+Después de ejecutar `docker-compose up -d`, verifica:
+
+```bash
+# Verificar health check
+curl http://localhost:3000/health
+
+# O con PowerShell
+Invoke-WebRequest -Uri http://localhost:3000/health -UseBasicParsing
+```
+
+### Respuesta Esperada con Base de Datos
+
+```json
+{
+  "status": "ok",
+  "timestamp": "2026-02-17T18:05:02.000Z",
+  "uptime": 123.45,
+  "database": {
+    "status": "connected"
+  }
+}
+```
+
+### Configuración de PostgreSQL
+
+Credenciales por defecto (definidas en `docker-compose.yml`):
+
+```
+Host: localhost (o 'postgres' desde dentro de Docker)
+Puerto: 5432
+Base de datos: tutorconnect
+Usuario: postgres
+Contraseña: postgres123
+```
+
+⚠️ **Importante**: Cambia estas credenciales en producción editando el archivo `docker-compose.yml`.
+
+### Conectarse a PostgreSQL desde tu máquina
+
+Puedes usar cualquier cliente de PostgreSQL (DBeaver, pgAdmin, TablePlus, etc.):
+
+```bash
+# Con psql desde Docker
+docker exec -it tutorconnect-postgres psql -U postgres -d tutorconnect
+
+# Con psql local (si tienes instalado)
+psql -h localhost -p 5432 -U postgres -d tutorconnect
+```
+
+## ▶️ Ejecutar el Proyecto (Sin Docker)
 
 ### Modo Desarrollo (con hot-reload)
 
@@ -261,23 +413,93 @@ npm run format
 
 ## 🗄️ Base de Datos
 
-El módulo `DatabaseModule` está preparado para integrar un ORM:
+El proyecto ya tiene **TypeORM** configurado y conectado con **PostgreSQL**.
 
-### Opciones Recomendadas:
+### Configuración Actual
 
-#### Opción 1: TypeORM (Tradicional)
-```bash
-npm install @nestjs/typeorm typeorm pg
+- **ORM**: TypeORM 0.3.x
+- **Base de Datos**: PostgreSQL 16
+- **Driver**: pg (node-postgres)
+
+### Estructura del Módulo de Base de Datos
+
+```
+src/database/
+├── database.module.ts     # Configuración de TypeORM con PostgreSQL
+└── database.service.ts    # Servicio con health checks y utilidades
 ```
 
-#### Opción 2: Prisma (Moderno)
-```bash
-npm install @prisma/client
-npm install -D prisma
-npx prisma init
+### Características Implementadas
+
+✅ Conexión automática con PostgreSQL  
+✅ Configuración desde variables de entorno  
+✅ Health checks de base de datos  
+✅ Logging en desarrollo  
+✅ Auto-sincronización en desarrollo (deshabilitada en producción)  
+
+### Crear Entidades
+
+Para crear una nueva entidad, crea un archivo en el módulo correspondiente:
+
+```typescript
+// src/modules/users/entities/user.entity.ts
+import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
+
+@Entity('users')
+export class User {
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  @Column({ unique: true })
+  email: string;
+
+  @Column()
+  name: string;
+
+  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  createdAt: Date;
+}
 ```
 
-**Nota**: La conexión a base de datos aún no está configurada. Elige el ORM que prefieras e intégralo en `src/database/database.module.ts`.
+Luego registra la entidad en `database.module.ts`:
+
+```typescript
+entities: [User], // Agrega tus entidades aquí
+```
+
+### Migrations (Producción)
+
+Para producción, desactiva `synchronize` y usa migraciones:
+
+```bash
+# Generar una migración
+npm run typeorm migration:generate -- -n MigrationName
+
+# Ejecutar migraciones
+npm run typeorm migration:run
+
+# Revertir migración
+npm run typeorm migration:revert
+```
+
+### Conectar desde un Cliente SQL
+
+Usa las credenciales configuradas en `.env` o `docker-compose.yml`:
+
+```bash
+# Desde Docker
+docker exec -it tutorconnect-postgres psql -U postgres -d tutorconnect
+
+# Desde tu máquina (con psql instalado)
+psql -h localhost -p 5432 -U postgres -d tutorconnect
+```
+
+### Clientes GUI Recomendados
+
+- **pgAdmin**: Cliente oficial de PostgreSQL
+- **DBeaver**: Cliente universal gratuito
+- **TablePlus**: Cliente moderno (macOS/Windows)
+- **DataGrip**: IDE de JetBrains (de pago)
 
 ## 📝 Scripts Disponibles
 

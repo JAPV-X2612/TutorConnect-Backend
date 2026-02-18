@@ -19,10 +19,23 @@ lerna-debug.log*
 .env.test
 .env.production
 .env.local
+.env.docker
 
 # temp directory
 .temp
 .tmp
+
+# Docker
+docker-compose.override.yml
+.dockerignore.custom
+
+# Database
+*.sqlite
+*.db
+*.db-shm
+*.db-wal
+data/
+pgdata/
 
 # ===================================
 # IDEs and Editors
