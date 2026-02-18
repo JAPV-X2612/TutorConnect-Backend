@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  # Base de datos PostgreSQL
+  postgres:
+    image: postgres:16-alpine
+    container_name: tutorconnect-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: tutorconnect
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - tutorconnect-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Aplicación NestJS
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tutorconnect-backend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_NAME: tutorconnect
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: postgres123
+      AUTH_SECRET: your-super-secret-key-change-in-production
+      JWT_EXPIRATION: 3600
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - tutorconnect-network
+    volumes:
+      - ./logs:/app/logs
+
+# Volúmenes persistentes
+volumes:
+  postgres_data:
+    driver: local
+
+# Red para comunicación entre servicios
+networks:
+  tutorconnect-network:
+    driver: bridge
+
