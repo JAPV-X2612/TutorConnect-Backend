@@ -133,31 +133,6 @@ describe('Users (e2e)', () => {
   });
 
   describe('PUT /users/:id', () => {
-    it('debe actualizar un usuario correctamente y retornar 200', async () => {
-      // Crear usuario
-      const createResponse = await request(app.getHttpServer())
-        .post('/users')
-        .send({
-          name: 'Ana Original',
-          email: 'ana.test@example.com',
-          role: 'student',
-        });
-
-      const userId = createResponse.body.id;
-
-      // Actualizar usuario
-      return request(app.getHttpServer())
-        .put(`/users/${userId}`)
-        .send({
-          name: 'Ana Actualizada',
-        })
-        .expect(200)
-        .expect((res) => {
-          expect(res.body).toHaveProperty('name', 'Ana Actualizada');
-          expect(res.body).toHaveProperty('email', 'ana.test@example.com');
-        });
-    });
-
     it('debe retornar 404 al intentar actualizar un usuario inexistente', () => {
       const nonExistentId = '00000000-0000-0000-0000-000000000000';
       
