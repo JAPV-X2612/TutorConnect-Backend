@@ -39,6 +39,12 @@ export class UsersService {
     const user = await this.findOne(id);
     await this.userRepository.remove(user);
   }
+
+  async findByClerkId(clerkId: string): Promise<UserEntity> {
+    const user = await this.userRepository.findOne({ where: { clerkId } });
+    if (!user) throw new NotFoundException('Usuario no encontrado');
+    return user;
+  }
 }
 
 

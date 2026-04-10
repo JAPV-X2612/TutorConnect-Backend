@@ -8,6 +8,7 @@ import { TutorsModule } from './modules/tutors/tutors.module';
 import { SearchModule } from './modules/search/search.module';
 import { BookingsModule } from './modules/bookings/bookings.module';
 import { HealthModule } from './modules/health/health.module';
+import { WebhooksModule } from './modules/webhooks/webhooks.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { HealthModule } from './modules/health/health.module';
     TutorsModule,
     SearchModule,
     BookingsModule,
+    WebhooksModule,
   ],
   providers: [AppService],
 })

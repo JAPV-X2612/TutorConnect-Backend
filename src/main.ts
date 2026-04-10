@@ -1,10 +1,19 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, BadRequestException } from '@nestjs/common';
+import * as express from 'express';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  // Disable built-in body parser so we can control it per-route
+  const app = await NestFactory.create(AppModule, { bodyParser: false });
+
+  // Raw body for Clerk webhook signature verification (must come first)
+  app.use('/webhooks/clerk', express.raw({ type: 'application/json' }));
+
+  // Standard body parsers for all other routes
+  app.use(express.json());
+  app.use(express.urlencoded({ extended: true }));
 
   // Filtro global de excepciones
   app.useGlobalFilters(new HttpExceptionFilter());
