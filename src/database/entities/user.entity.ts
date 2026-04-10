@@ -7,11 +7,15 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { TutorEntity } from './tutor.entity';
+import { Role } from '../../common/enums/role.enum';
 
 @Entity('users')
 export class UserEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
+
+  @Column({ name: 'clerk_id', length: 255, unique: true, nullable: true })
+  clerkId: string | null;
 
   @Column({ length: 150 })
   name: string;
@@ -19,8 +23,8 @@ export class UserEntity {
   @Column({ length: 150, unique: true })
   email: string;
 
-  @Column({ length: 20 })
-  role: 'student' | 'tutor';
+  @Column({ length: 50 })
+  role: Role;
 
   @OneToOne(() => TutorEntity, (tutor) => tutor.user)
   tutor?: TutorEntity;

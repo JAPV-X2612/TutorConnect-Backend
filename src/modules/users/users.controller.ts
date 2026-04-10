@@ -8,15 +8,41 @@ import {
   Param,
   HttpCode,
   HttpStatus,
+  Req,
+  UseGuards,
 } from '@nestjs/common';
+import type { Request } from 'express';
 import { UsersService } from './users.service';
 import { UserEntity } from '../../database/entities/user.entity';
 import { CreateUserDto } from './dtos/create-user.dto';
 import { UpdateUserDto } from './dtos/update-user.dto';
+import { ClerkJwtGuard } from '../auth/clerk-jwt.guard';
+import { RoleGuard } from '../auth/role.guard';
+import { Roles, Role } from '../auth/role.decorator';
 
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
+
+  @Get('me')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(ClerkJwtGuard, RoleGuard)
+  @Roles(Role.APRENDIZ)
+  async getMe(@Req() req: Request): Promise<{
+    id: string;
+    email: string;
+    rol: string;
+    created_at: Date;
+  }> {
+    const { clerk_id } = (req as any).user;
+    const user = await this.usersService.findByClerkId(clerk_id);
+    return {
+      id: user.id,
+      email: user.email,
+      rol: user.role,
+      created_at: user.createdAt,
+    };
+  }
 
   @Post()
   @HttpCode(HttpStatus.CREATED) // 201

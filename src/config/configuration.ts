@@ -11,6 +11,10 @@ export default () => ({
     secret: process.env.AUTH_SECRET || 'secret',
     jwtExpiration: parseInt(process.env.JWT_EXPIRATION || '3600', 10),
   },
+  clerk: {
+    secretKey: process.env.CLERK_SECRET_KEY || '',
+    webhookSecret: process.env.CLERK_WEBHOOK_SECRET || '',
+  },
 });
 
 
