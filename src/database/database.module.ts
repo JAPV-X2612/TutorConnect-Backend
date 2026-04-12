@@ -13,6 +13,7 @@ import { BookingEntity } from './entities/booking.entity';
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
         type: 'postgres',
+        url: configService.get<string>('database.url') || undefined,
         host: configService.get<string>('database.host'),
         port: configService.get<number>('database.port'),
         username: configService.get<string>('database.user'),
