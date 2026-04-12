@@ -1,12 +1,19 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, BadRequestException } from '@nestjs/common';
 import * as express from 'express';
+import { join } from 'path';
+import { existsSync, mkdirSync } from 'fs';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 
 async function bootstrap() {
   // Disable built-in body parser so we can control it per-route
   const app = await NestFactory.create(AppModule, { bodyParser: false });
+
+  // Servir archivos estáticos desde uploads/
+  const uploadsDir = join(process.cwd(), 'uploads');
+  if (!existsSync(uploadsDir)) mkdirSync(uploadsDir, { recursive: true });
+  app.use('/uploads', express.static(uploadsDir));
 
   // Raw body for Clerk webhook signature verification (must come first)
   app.use('/webhooks/clerk', express.raw({ type: 'application/json' }));
