@@ -9,8 +9,8 @@ import { verifyToken } from '@clerk/backend';
 @Injectable()
 export class ClerkJwtGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const request = context.switchToHttp().getRequest();
-    const authHeader: string | undefined = request.headers['authorization'];
+    const request = context.switchToHttp().getRequest(); // TODO: Fix error
+    const authHeader: string | undefined = request.headers['authorization']; // TODO: Fix error
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       throw new UnauthorizedException('Token requerido');
@@ -23,14 +23,14 @@ export class ClerkJwtGuard implements CanActivate {
         secretKey: process.env.CLERK_SECRET_KEY,
       });
 
-      request.user = {
+      request.user = { // TODO: Fix error
         clerk_id: payload.sub,
-        role: (payload as any).role as string,
+        role: (payload as any).role as string, // TODO: Fix error
       };
 
       return true;
     } catch (error: any) {
-      const msg: string = error?.message ?? '';
+      const msg: string = error?.message ?? ''; // TODO: Fix error
       if (
         error?.reason === 'token-expired' ||
         msg.toLowerCase().includes('expir')
