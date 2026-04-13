@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { UserEntity } from '../../database/entities/user.entity';
@@ -13,9 +13,17 @@ export class UsersService {
   ) {}
 
   async create(dto: CreateUserDto): Promise<UserEntity> {
-    const user = this.userRepository.create(dto as any);
-    const saved = await this.userRepository.save(user as any);
-    return Array.isArray(saved) ? saved[0] : saved;
+    try {
+      const user = this.userRepository.create(dto as any);
+      const saved = await this.userRepository.save(user as any);
+      return Array.isArray(saved) ? saved[0] : saved;
+    } catch (error: any) {
+      // PostgreSQL unique constraint violation
+      if (error?.code === '23505') {
+        throw new ConflictException('El usuario ya existe');
+      }
+      throw error;
+    }
   }
 
   async findAll(): Promise<UserEntity[]> {
