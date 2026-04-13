@@ -10,7 +10,7 @@ import { Repository } from 'typeorm';
 import { createClerkClient } from '@clerk/backend';
 import { randomUUID } from 'crypto';
 import { TutorEntity } from '../../database/entities/tutor.entity';
-import { UserEntity } from '../../database/entities/user.entity';
+import { UserEntity } from '../../users/entities/user.entity';
 import { CertificacionEntity } from '../../database/entities/certificacion.entity';
 import { StorageService } from '../../storage/storage.service';
 import { CreateTutorDto } from './dtos/create-tutor.dto';
@@ -43,7 +43,12 @@ export class TutorsService {
   async register(
     clerkId: string,
     dto: RegisterTutorDto,
-  ): Promise<{ id: string; nombre: string; apellido: string; estado: TutorEstado }> {
+  ): Promise<{
+    id: string;
+    nombre: string;
+    apellido: string;
+    estado: TutorEstado;
+  }> {
     const user = await this.userRepository.findOne({ where: { clerkId } });
     if (!user) throw new NotFoundException('Usuario no encontrado');
 
@@ -80,13 +85,19 @@ export class TutorsService {
     tutorId: string,
     clerkId: string,
     file: Express.Multer.File,
-  ): Promise<{ id: string; nombre_archivo: string; s3_url: string; mime_type: string }> {
+  ): Promise<{
+    id: string;
+    nombre_archivo: string;
+    s3_url: string;
+    mime_type: string;
+  }> {
     const tutor = await this.tutorRepository.findOne({
       where: { id: tutorId },
       relations: ['user', 'certificaciones'],
     });
     if (!tutor) throw new NotFoundException('Tutor no encontrado');
-    if (tutor.user.clerkId !== clerkId) throw new ForbiddenException('Acceso denegado');
+    if (tutor.user.clerkId !== clerkId)
+      throw new ForbiddenException('Acceso denegado');
 
     if (!ALLOWED_MIME_TYPES.includes(file.mimetype)) {
       throw new BadRequestException('Solo se permiten PDF, JPG y PNG');
@@ -95,12 +106,14 @@ export class TutorsService {
       throw new BadRequestException('El archivo no puede superar 5 MB');
     }
     if (tutor.certificaciones.length >= MAX_CERTIFICACIONES) {
-      throw new BadRequestException('No se pueden subir más de 10 certificaciones');
+      throw new BadRequestException(
+        'No se pueden subir más de 10 certificaciones',
+      );
     }
 
     const s3Key = `certificaciones/${tutorId}/${randomUUID()}-${file.originalname}`;
 
-    await this.storageService.uploadFile(s3Key, file.buffer, file.mimetype);
+    this.storageService.uploadFile(s3Key, file.buffer, file.mimetype);
 
     const cert = this.certRepository.create({
       tutor,
@@ -110,7 +123,7 @@ export class TutorsService {
     });
     const saved = await this.certRepository.save(cert);
 
-    const s3_url = await this.storageService.getPresignedUrl(s3Key, 900);
+    const s3_url = this.storageService.getPresignedUrl(s3Key, 900);
 
     return {
       id: saved.id,
@@ -131,7 +144,9 @@ export class TutorsService {
       created_at: Date;
     }>
   > {
-    const tutor = await this.tutorRepository.findOne({ where: { id: tutorId } });
+    const tutor = await this.tutorRepository.findOne({
+      where: { id: tutorId },
+    });
     if (!tutor) throw new NotFoundException('Tutor no encontrado');
 
     const certs = await this.certRepository.find({
@@ -144,7 +159,7 @@ export class TutorsService {
         id: cert.id,
         nombre_archivo: cert.nombreArchivo,
         mime_type: cert.mimeType,
-        url_presignada: await this.storageService.getPresignedUrl(cert.s3Key, 900),
+        url_presignada: this.storageService.getPresignedUrl(cert.s3Key, 900),
         created_at: cert.createdAt,
       })),
     );
@@ -153,8 +168,11 @@ export class TutorsService {
   // ── CRUD existente ────────────────────────────────────────────────────────
 
   async create(dto: CreateTutorDto): Promise<TutorEntity> {
-    const user = await this.userRepository.findOne({ where: { id: dto.userId } });
-    if (!user) throw new NotFoundException(`User with id ${dto.userId} not found`);
+    const user = await this.userRepository.findOne({
+      where: { id: dto.userId },
+    });
+    if (!user)
+      throw new NotFoundException(`User with id ${dto.userId} not found`);
 
     const tutor = this.tutorRepository.create({
       user,
@@ -163,8 +181,8 @@ export class TutorsService {
       experienceYears: dto.experienceYears,
     } as any);
 
-    const saved = await this.tutorRepository.save(tutor as any);
-    return Array.isArray(saved) ? saved[0] : saved;
+    const saved = await this.tutorRepository.save(tutor as any); // TODO: Fix warning
+    return Array.isArray(saved) ? saved[0] : saved; // TODO: Fix warning
   }
 
   async findAll(): Promise<TutorEntity[]> {
@@ -183,8 +201,8 @@ export class TutorsService {
   async update(id: string, dto: UpdateTutorDto): Promise<TutorEntity> {
     const tutor = await this.findOne(id);
     Object.assign(tutor, dto as any);
-    const saved = await this.tutorRepository.save(tutor as any);
-    return Array.isArray(saved) ? saved[0] : saved;
+    const saved = await this.tutorRepository.save(tutor as any); // TODO: Fix warning
+    return Array.isArray(saved) ? saved[0] : saved; // TODO: Fix warning
   }
 
   async remove(id: string): Promise<void> {

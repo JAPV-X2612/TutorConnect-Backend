@@ -33,8 +33,8 @@ export class TutorsController {
   @HttpCode(HttpStatus.CREATED)
   @UseGuards(ClerkJwtGuard)
   async register(@Body() dto: RegisterTutorDto, @Req() req: Request) {
-    const { clerk_id } = (req as any).user;
-    return this.tutorsService.register(clerk_id, dto);
+    const { clerk_id } = (req as any).user; // TODO: Fix error
+    return this.tutorsService.register(clerk_id, dto); // TODO: Fix warning
   }
 
   // ── POST /tutors/:id/certificaciones ────────────────────────────────────
@@ -48,8 +48,8 @@ export class TutorsController {
     @UploadedFile() file: Express.Multer.File,
     @Req() req: Request,
   ) {
-    const { clerk_id } = (req as any).user;
-    return this.tutorsService.uploadCertificacion(id, clerk_id, file);
+    const { clerk_id } = (req as any).user; // TODO: Fix error
+    return this.tutorsService.uploadCertificacion(id, clerk_id, file); // TODO: Fix warning
   }
 
   // ── GET /tutors/:id/certificaciones ──────────────────────────────────────
@@ -83,7 +83,10 @@ export class TutorsController {
 
   @Put(':id')
   @HttpCode(HttpStatus.OK)
-  async update(@Param('id') id: string, @Body() dto: UpdateTutorDto): Promise<TutorEntity> {
+  async update(
+    @Param('id') id: string,
+    @Body() dto: UpdateTutorDto,
+  ): Promise<TutorEntity> {
     return this.tutorsService.update(id, dto);
   }
 

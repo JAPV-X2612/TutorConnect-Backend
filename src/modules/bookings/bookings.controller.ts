@@ -38,7 +38,10 @@ export class BookingsController {
 
   @Put(':id')
   @HttpCode(HttpStatus.OK) // 200
-  async update(@Param('id') id: string, @Body() dto: UpdateBookingDto): Promise<BookingEntity> {
+  async update(
+    @Param('id') id: string,
+    @Body() dto: UpdateBookingDto,
+  ): Promise<BookingEntity> {
     return await this.bookingsService.update(id, dto);
   }
 
@@ -48,5 +51,3 @@ export class BookingsController {
     await this.bookingsService.remove(id);
   }
 }
-
-

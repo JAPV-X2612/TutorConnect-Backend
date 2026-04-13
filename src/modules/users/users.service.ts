@@ -1,7 +1,11 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { UserEntity } from '../../database/entities/user.entity';
+import { UserEntity } from '../../users/entities/user.entity';
 import { CreateUserDto } from './dtos/create-user.dto';
 import { UpdateUserDto } from './dtos/update-user.dto';
 
@@ -14,13 +18,13 @@ export class UsersService {
 
   async create(dto: CreateUserDto): Promise<UserEntity> {
     try {
-      const user = this.userRepository.create(dto as any);
-      const saved = await this.userRepository.save(user as any);
-      return Array.isArray(saved) ? saved[0] : saved;
+      const user = this.userRepository.create(dto as any); // TODO: Fix warning
+      const saved = await this.userRepository.save(user as any); // TODO: Fix error
+      return Array.isArray(saved) ? saved[0] : saved; // TODO: Fix error
     } catch (error: any) {
       // PostgreSQL unique constraint violation
       if (error?.code === '23505') {
-        throw new ConflictException('El usuario ya existe');
+        throw new ConflictException('El usuario ya existe'); // TODO: Fix error
       }
       throw error;
     }
@@ -39,8 +43,8 @@ export class UsersService {
   async update(id: string, dto: UpdateUserDto): Promise<UserEntity> {
     const user = await this.findOne(id);
     Object.assign(user, dto);
-    const saved = await this.userRepository.save(user as any);
-    return Array.isArray(saved) ? saved[0] : saved;
+    const saved = await this.userRepository.save(user as any); // TODO: Fix error
+    return Array.isArray(saved) ? saved[0] : saved; // TODO: Fix error
   }
 
   async remove(id: string): Promise<void> {
@@ -54,5 +58,3 @@ export class UsersService {
     return user;
   }
 }
-
-

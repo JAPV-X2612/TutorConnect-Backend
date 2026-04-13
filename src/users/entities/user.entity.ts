@@ -1,4 +1,10 @@
-import { Column, CreateDateColumn, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  Index,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 import { Role } from '../../common/enums/role.enum';
 
 @Entity('users')
@@ -27,5 +33,5 @@ export class UserEntity {
 
   // Compatibility fields used by existing DTOs/services.
   name?: string;
-  updatedAt?: Date;
+  updatedAt?: Date; // TODO: Validate use
 }
