@@ -1,6 +1,7 @@
 export default () => ({
   port: parseInt(process.env.PORT || '3000', 10),
   database: {
+    url: process.env.DATABASE_URL || '',
     host: process.env.DATABASE_HOST || 'localhost',
     port: parseInt(process.env.DATABASE_PORT || '5432', 10),
     name: process.env.DATABASE_NAME || 'tutorconnect',
@@ -10,6 +11,10 @@ export default () => ({
   auth: {
     secret: process.env.AUTH_SECRET || 'secret',
     jwtExpiration: parseInt(process.env.JWT_EXPIRATION || '3600', 10),
+  },
+  clerk: {
+    secretKey: process.env.CLERK_SECRET_KEY || '',
+    webhookSecret: process.env.CLERK_WEBHOOK_SECRET || '',
   },
 });
 

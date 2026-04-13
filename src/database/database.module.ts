@@ -5,6 +5,7 @@ import { DatabaseService } from './database.service';
 import { UserEntity } from './entities/user.entity';
 import { TutorEntity } from './entities/tutor.entity';
 import { BookingEntity } from './entities/booking.entity';
+import { CertificacionEntity } from './entities/certificacion.entity';
 
 @Module({
   imports: [
@@ -13,12 +14,13 @@ import { BookingEntity } from './entities/booking.entity';
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
         type: 'postgres',
+        url: configService.get<string>('database.url') || undefined,
         host: configService.get<string>('database.host'),
         port: configService.get<number>('database.port'),
         username: configService.get<string>('database.user'),
         password: configService.get<string>('database.password'),
         database: configService.get<string>('database.name'),
-        entities: [UserEntity, TutorEntity, BookingEntity],
+        entities: [UserEntity, TutorEntity, BookingEntity, CertificacionEntity],
         synchronize: process.env.NODE_ENV !== 'production', // Solo en desarrollo
         logging: process.env.NODE_ENV !== 'production',
       }),
