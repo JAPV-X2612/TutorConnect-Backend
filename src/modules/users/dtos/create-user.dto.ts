@@ -1,20 +1,22 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Expose } from 'class-transformer';
-import { IsString, IsEmail, IsIn } from 'class-validator';
+import { IsString, IsEmail, IsOptional, IsEnum } from 'class-validator';
+import { Role } from '../../../common/enums/role.enum';
 
 export class CreateUserDto {
-  @ApiProperty({ example: 'María López' })
+  @ApiProperty({ example: 'user_2abc123' })
   @IsString()
   @Expose()
-  name: string;
+  clerkId: string;
 
   @ApiProperty({ example: 'maria@example.com' })
   @IsEmail()
   @Expose()
   email: string;
 
-  @ApiProperty({ example: 'student', enum: ['student', 'tutor'] })
-  @IsIn(['student', 'tutor'])
+  @ApiProperty({ example: Role.APRENDIZ, enum: Role })
+  @IsEnum(Role)
+  @IsOptional()
   @Expose()
-  role: 'student' | 'tutor';
+  role?: Role;
 }
