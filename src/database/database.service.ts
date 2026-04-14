@@ -11,7 +11,7 @@ export class DatabaseService implements OnModuleInit {
     private readonly dataSource: DataSource,
   ) {}
 
-  async onModuleInit() {
+  onModuleInit() {
     try {
       if (this.dataSource.isInitialized) {
         this.logger.log('✅ Database connection established successfully');
@@ -37,4 +37,3 @@ export class DatabaseService implements OnModuleInit {
     return this.dataSource;
   }
 }
-

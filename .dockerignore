@@ -1,46 +1,156 @@
-# Dependencias
+# =========================================
+# NestJS / Node.js Base
+# =========================================
 node_modules/
-npm-debug.log
-yarn-error.log
+/dist
+/build
+*.tsbuildinfo
+.node_repl_history
 
-# Archivos de compilación
-dist/
-build/
+# =========================================
+# Package Managers
+# =========================================
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+.yarn/
+.pnpm-store/
 
-# Archivos de entorno
+# =========================================
+# Environment Variables
+# =========================================
 .env
 .env.*
 !.env.example
 
-# Archivos de prueba
-coverage/
-*.log
+# =========================================
+# Testing & Coverage
+# =========================================
+/coverage
+.nyc_output
+test-results/
+junit.xml
+**/*.spec.ts
+**/*.e2e-spec.ts
+/test
 
-# Archivos de IDE
+# =========================================
+# Type Checkers & Linters
+# =========================================
+.eslintcache
+.stylelintcache
+.prettiercache
+.eslintrc*
+.prettierrc*
+eslint.config.*
+.editorconfig
+
+# =========================================
+# IDEs
+# =========================================
 .vscode/
 .idea/
+.cursor/
 *.swp
 *.swo
-*~
+.history/
+*.code-workspace
 
-# Archivos del sistema
-.DS_Store
+# =========================================
+# Documentation
+# =========================================
+*.md
+!README.md
+compodoc/
+/site
+
+# =========================================
+# Operating Systems
+# =========================================
+.DS_Store?
+.AppleDouble
+._*
+.Spotlight-V100
+.Trashes
 Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*~
+.fuse_hidden*
+.directory
+.Trash-*
 
+# =========================================
 # Git
+# =========================================
 .git/
 .gitignore
 
+# =========================================
 # Docker
-Dockerfile
+# =========================================
+Dockerfile*
 docker-compose*.yml
 .dockerignore
 
-# Otros
-*.md
-!README.md
-.editorconfig
-.prettierrc
-.eslintrc.js
-eslint.config.mjs
+# =========================================
+# Infrastructure
+# =========================================
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+.aws/
+.aws-sam/
+samconfig.toml
+.serverless/
 
+# =========================================
+# Secrets & Credentials
+# =========================================
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+secrets.yaml
+secrets.json
+credentials.json
+service-account.json
+firebase-adminsdk-*.json
+
+# =========================================
+# Logs & Temporary Files
+# =========================================
+*.log
+*.tmp
+*.bak
+tmp/
+.temp/
+.tmp/
+
+# =========================================
+# Database (local volumes)
+# =========================================
+pgdata/
+postgres-data/
+redis-data/
+dump.rdb
+*.sqlite
+*.db
+
+# =========================================
+# CI/CD
+# =========================================
+.gitlab-ci.yml
+.circleci/
+Jenkinsfile
+
+# =========================================
+# Project-Specific
+# =========================================
+uploads/
+public/uploads/

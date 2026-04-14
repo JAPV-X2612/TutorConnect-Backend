@@ -30,4 +30,3 @@ import { CertificacionEntity } from './entities/certificacion.entity';
   exports: [DatabaseService],
 })
 export class DatabaseModule {}
-

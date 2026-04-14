@@ -2,7 +2,7 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Webhook } from 'svix';
-import { UserEntity } from '../../database/entities/user.entity';
+import { UserEntity } from '../../users/entities/user.entity';
 import { Role } from '../../common/enums/role.enum';
 
 interface SvixHeaders {
@@ -33,19 +33,19 @@ export class WebhooksService {
     }
 
     if (event.type === 'user.created') {
-      await this.createUserFromClerk(event.data);
+      await this.createUserFromClerk(event.data); // TODO: Fix error
     }
 
     return { received: true };
   }
 
   private async createUserFromClerk(data: any): Promise<void> {
-    const clerkId: string = data.id;
+    const clerkId: string = data.id; // TODO: Fix error
     const primaryEmail: string =
       data.email_addresses?.find(
-        (e: any) => e.id === data.primary_email_address_id,
-      )?.email_address ??
-      data.email_addresses?.[0]?.email_address ??
+        (e: any) => e.id === data.primary_email_address_id, // TODO: Fix error
+      )?.email_address ?? // TODO: Fix error
+      data.email_addresses?.[0]?.email_address ?? // TODO: Fix error
       '';
 
     const existing = await this.userRepository.findOne({
@@ -54,7 +54,7 @@ export class WebhooksService {
     if (existing) return;
 
     const fullName =
-      [data.first_name, data.last_name].filter(Boolean).join(' ') ||
+      [data.first_name, data.last_name].filter(Boolean).join(' ') || // TODO: Fix error
       primaryEmail;
 
     const user = this.userRepository.create({

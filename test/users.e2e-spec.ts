@@ -6,7 +6,6 @@ import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter
 
 describe('Users (e2e)', () => {
   let app: INestApplication;
-  let createdUserId: string;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -14,8 +13,7 @@ describe('Users (e2e)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
-    
-    // Configurar pipes y filtros como en main.ts
+
     app.useGlobalFilters(new HttpExceptionFilter());
     app.useGlobalPipes(
       new ValidationPipe({
@@ -34,7 +32,7 @@ describe('Users (e2e)', () => {
 
   describe('POST /users', () => {
     it('debe crear un usuario correctamente y retornar 201', () => {
-      return request(app.getHttpServer())
+      return request(app.getHttpServer()) // TODO: Fix warning
         .post('/users')
         .send({
           name: 'María López',
@@ -49,12 +47,11 @@ describe('Users (e2e)', () => {
           expect(res.body).toHaveProperty('role', 'student');
           expect(res.body).toHaveProperty('createdAt');
           expect(res.body).toHaveProperty('updatedAt');
-          createdUserId = res.body.id;
         });
     });
 
     it('debe fallar con validación si el email es inválido (400)', () => {
-      return request(app.getHttpServer())
+      return request(app.getHttpServer()) // TODO: Fix warning
         .post('/users')
         .send({
           name: 'Juan Pérez',
@@ -68,7 +65,7 @@ describe('Users (e2e)', () => {
     });
 
     it('debe fallar si el rol es inválido (400)', () => {
-      return request(app.getHttpServer())
+      return request(app.getHttpServer()) // TODO: Fix warning
         .post('/users')
         .send({
           name: 'Pedro García',
@@ -82,7 +79,7 @@ describe('Users (e2e)', () => {
   describe('GET /users/:id', () => {
     it('debe obtener un usuario por ID correctamente y retornar 200', async () => {
       // Primero crear un usuario
-      const createResponse = await request(app.getHttpServer())
+      const createResponse = await request(app.getHttpServer()) // TODO: Fix warning
         .post('/users')
         .send({
           name: 'Carlos Test',
@@ -90,10 +87,10 @@ describe('Users (e2e)', () => {
           role: 'tutor',
         });
 
-      const userId = createResponse.body.id;
+      const userId = createResponse.body.id; // TODO: Fix error
 
       // Luego obtenerlo
-      return request(app.getHttpServer())
+      return request(app.getHttpServer()) // TODO: Fix warning
         .get(`/users/${userId}`)
         .expect(200)
         .expect((res) => {
@@ -106,8 +103,8 @@ describe('Users (e2e)', () => {
 
     it('debe retornar 404 si el usuario no existe', () => {
       const nonExistentId = '00000000-0000-0000-0000-000000000000';
-      
-      return request(app.getHttpServer())
+
+      return request(app.getHttpServer()) // TODO: Fix warning
         .get(`/users/${nonExistentId}`)
         .expect(404)
         .expect((res) => {
@@ -118,7 +115,7 @@ describe('Users (e2e)', () => {
 
   describe('GET /users', () => {
     it('debe obtener todos los usuarios y retornar 200', () => {
-      return request(app.getHttpServer())
+      return request(app.getHttpServer()) // TODO: Fix warning
         .get('/users')
         .expect(200)
         .expect((res) => {
@@ -135,8 +132,8 @@ describe('Users (e2e)', () => {
   describe('PUT /users/:id', () => {
     it('debe retornar 404 al intentar actualizar un usuario inexistente', () => {
       const nonExistentId = '00000000-0000-0000-0000-000000000000';
-      
-      return request(app.getHttpServer())
+
+      return request(app.getHttpServer()) // TODO: Fix warning
         .put(`/users/${nonExistentId}`)
         .send({ name: 'Nuevo Nombre' })
         .expect(404)
@@ -149,7 +146,7 @@ describe('Users (e2e)', () => {
   describe('DELETE /users/:id', () => {
     it('debe eliminar un usuario correctamente y retornar 204', async () => {
       // Crear usuario
-      const createResponse = await request(app.getHttpServer())
+      const createResponse = await request(app.getHttpServer()) // TODO: Fix warning
         .post('/users')
         .send({
           name: 'Usuario a Eliminar',
@@ -157,23 +154,21 @@ describe('Users (e2e)', () => {
           role: 'student',
         });
 
-      const userId = createResponse.body.id;
+      const userId = createResponse.body.id; // TODO: Fix error
 
-      // Eliminar usuario
-      await request(app.getHttpServer())
+      await request(app.getHttpServer()) // TODO: Fix warning
         .delete(`/users/${userId}`)
         .expect(204);
 
-      // Verificar que ya no existe
-      return request(app.getHttpServer())
+      return request(app.getHttpServer()) // TODO: Fix warning
         .get(`/users/${userId}`)
         .expect(404);
     });
 
     it('debe retornar 404 al intentar eliminar un usuario inexistente', () => {
       const nonExistentId = '00000000-0000-0000-0000-000000000000';
-      
-      return request(app.getHttpServer())
+
+      return request(app.getHttpServer()) // TODO: Fix warning
         .delete(`/users/${nonExistentId}`)
         .expect(404);
     });
