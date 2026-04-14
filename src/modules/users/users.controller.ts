@@ -13,7 +13,7 @@ import {
 } from '@nestjs/common';
 import type { Request } from 'express';
 import { UsersService } from './users.service';
-import { UserEntity } from '../../database/entities/user.entity';
+import { UserEntity } from '../../users/entities/user.entity';
 import { CreateUserDto } from './dtos/create-user.dto';
 import { UpdateUserDto } from './dtos/update-user.dto';
 import { ClerkJwtGuard } from '../auth/clerk-jwt.guard';
@@ -34,8 +34,8 @@ export class UsersController {
     rol: string;
     created_at: Date;
   }> {
-    const { clerk_id } = (req as any).user;
-    const user = await this.usersService.findByClerkId(clerk_id);
+    const { clerk_id } = (req as any).user; // TODO: Fix error
+    const user = await this.usersService.findByClerkId(clerk_id); // TODO: Fix warning
     return {
       id: user.id,
       email: user.email,
@@ -64,7 +64,10 @@ export class UsersController {
 
   @Put(':id')
   @HttpCode(HttpStatus.OK) // 200
-  async update(@Param('id') id: string, @Body() dto: UpdateUserDto): Promise<UserEntity> {
+  async update(
+    @Param('id') id: string,
+    @Body() dto: UpdateUserDto,
+  ): Promise<UserEntity> {
     return await this.usersService.update(id, dto);
   }
 
@@ -74,5 +77,3 @@ export class UsersController {
     await this.usersService.remove(id);
   }
 }
-
-

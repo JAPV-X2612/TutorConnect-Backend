@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
-import { UserEntity } from '../../database/entities/user.entity';
+import { UserEntity } from '../../users/entities/user.entity';
 import { UsersDBService } from '../../database/dbservices/users.dbservice';
 
 @Module({
@@ -12,4 +12,3 @@ import { UsersDBService } from '../../database/dbservices/users.dbservice';
   exports: [UsersService, UsersDBService],
 })
 export class UsersModule {}
-

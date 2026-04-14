@@ -5,7 +5,5 @@ import { SearchService } from './search.service';
 export class SearchController {
   constructor(private readonly searchService: SearchService) {}
 
-  // TODO: Implementar endpoints de búsqueda con IA
+  // TODO: Implement AI-powered search endpoints
 }
-
-

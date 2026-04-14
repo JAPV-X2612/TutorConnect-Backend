@@ -2,7 +2,5 @@ import { Injectable } from '@nestjs/common';
 
 @Injectable()
 export class SearchService {
-  // TODO: Implementar lógica de búsqueda y matching con IA
+  // TODO: Implement search and matching logic with AI
 }
-
-
