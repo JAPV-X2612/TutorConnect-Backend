@@ -185,8 +185,15 @@ export class TutorsService {
     return Array.isArray(saved) ? saved[0] : saved; // TODO: Fix warning
   }
 
-  async findAll(): Promise<TutorEntity[]> {
-    return this.tutorRepository.find({ relations: ['user'] });
+  async findAll(subject?: string): Promise<TutorEntity[]> {
+    if (!subject) {
+      return this.tutorRepository.find({ relations: ['user'] });
+    }
+    return this.tutorRepository
+      .createQueryBuilder('tutor')
+      .leftJoinAndSelect('tutor.user', 'user')
+      .where('tutor.subjects LIKE :subject', { subject: `%${subject}%` })
+      .getMany();
   }
 
   async findOne(id: string): Promise<TutorEntity> {

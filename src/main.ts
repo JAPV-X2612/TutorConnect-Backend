@@ -47,6 +47,33 @@ async function bootstrap() {
     }),
   );
 
+  const allowedOrigins = [
+    'http://localhost:8081',
+    'http://localhost:8082',
+    'http://localhost:19000',
+    'http://localhost:19006',
+    ...(process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : []),
+  ];
+
+  app.enableCors({
+    origin: (origin, callback) => {
+      // Allow requests with no origin (Postman, mobile apps, server-to-server)
+      if (!origin) return callback(null, true);
+      if (
+        allowedOrigins.includes(origin) ||
+        /\.ngrok(-free)?\.(app|io|dev)$/.test(origin)
+      ) {
+        return callback(null, true);
+      }
+      callback(new Error(`CORS: origin ${origin} not allowed`));
+    },
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'ngrok-skip-browser-warning'],
+    credentials: true,
+  });
+
+  app.setGlobalPrefix('api');
+
   await app.listen(process.env.PORT || 3000);
 }
-bootstrap(); // TODO: Fix warning
+bootstrap();
