@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Expose } from 'class-transformer';
 import { UserRole } from '../../../common/enums/user-role.enum';
 import { UserStatus } from '../../../common/enums/user-status.enum';
@@ -44,4 +44,32 @@ export class UserDto {
   @ApiProperty({ example: '2026-04-18T18:05:02.000Z' })
   @Expose()
   updatedAt: Date;
+
+  // ── Location & institutional ─────────────────────────────────────────────────
+
+  @ApiPropertyOptional({ example: 'BOGOTÁ' })
+  @Expose()
+  city?: string | null;
+
+  @ApiPropertyOptional({ example: 'Colombia' })
+  @Expose()
+  country?: string;
+
+  @ApiPropertyOptional({ example: 'ESCUELA COLOMBIANA DE INGENIERÍA' })
+  @Expose()
+  organizationName?: string | null;
+
+  @ApiPropertyOptional({ example: 'Ingeniería de Sistemas' })
+  @Expose()
+  academicProgram?: string | null;
+
+  // ── Learner-specific ─────────────────────────────────────────────────────────
+
+  @ApiPropertyOptional({ example: ['Matemáticas', 'Física'] })
+  @Expose()
+  interests?: string[] | null;
+
+  @ApiPropertyOptional({ example: 4 })
+  @Expose()
+  currentSemester?: number | null;
 }
