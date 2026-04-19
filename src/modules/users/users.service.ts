@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   Logger,
@@ -8,13 +9,15 @@ import { UsersDBService } from '../../database/dbservices/users.dbservice';
 import { UserEntity } from './entities/user.entity';
 import { CreateUserDto } from './dtos/create-user.dto';
 import { UpdateUserDto } from './dtos/update-user.dto';
+import { UserRole } from '../../common/enums/user-role.enum';
 
 /**
  * Business logic service for the Users module (MOD-USR-002).
  *
- * Orchestrates user profile operations. All database persistence is delegated
- * to {@link UsersDBService} — this service never touches TypeORM repositories
- * directly.
+ * Orchestrates user profile operations including role-specific validation,
+ * field normalisation, and transactional persistence. All database access is
+ * delegated to {@link UsersDBService} — this service never touches TypeORM
+ * repositories directly.
  *
  * @author TutorConnect Team
  */
@@ -25,20 +28,79 @@ export class UsersService {
   constructor(private readonly usersDBService: UsersDBService) {}
 
   /**
-   * Creates a new user profile in the database.
+   * Creates a new user profile inside a database transaction.
+   *
+   * Validates role-specific requirements before persisting:
+   * - A LEARNER registration must supply at least one interest and an
+   *   organisation name (university).
+   * - A TUTOR registration must supply specialties and an hourly rate.
+   *
+   * The {@link CreateUserDto.city} and {@link CreateUserDto.organizationName}
+   * fields are normalised to uppercase before storage to support
+   * case-insensitive regional and institutional tutor matching (MOD-BUS-003).
    *
    * @param dto - Validated creation payload.
    * @returns The persisted {@link UserEntity}.
+   * @throws {BadRequestException} When role-specific required fields are missing.
    * @throws {ConflictException} When the clerk_id or email is already in use.
    */
   async create(dto: CreateUserDto): Promise<UserEntity> {
+    const role = dto.role ?? UserRole.LEARNER;
+
+    if (role === UserRole.LEARNER) {
+      if (!dto.interests?.length) {
+        throw new BadRequestException(
+          'Learner registration requires at least one interest',
+        );
+      }
+      if (!dto.organizationName) {
+        throw new BadRequestException(
+          'Learner registration requires a university or organisation name',
+        );
+      }
+    }
+
+    if (role === UserRole.TUTOR) {
+      if (!dto.specialties?.length) {
+        throw new BadRequestException(
+          'Tutor registration requires at least one specialty',
+        );
+      }
+      if (dto.hourlyRate === undefined || dto.hourlyRate === null) {
+        throw new BadRequestException(
+          'Tutor registration requires an hourly rate',
+        );
+      }
+    }
+
+    const userData: Partial<UserEntity> = {
+      clerkId: dto.clerkId,
+      email: dto.email,
+      firstName: dto.firstName,
+      lastName: dto.lastName,
+      role,
+      city: dto.city ? dto.city.toUpperCase() : null,
+      country: dto.country ?? 'Colombia',
+      organizationName: dto.organizationName
+        ? dto.organizationName.toUpperCase()
+        : null,
+      academicProgram: dto.program ?? null,
+      interests: dto.interests ?? null,
+      currentSemester: dto.currentSemester ?? null,
+      specialties: dto.specialties ?? null,
+      experienceYears: dto.experienceYears ?? null,
+      isVerified: role === UserRole.TUTOR ? false : null,
+      hourlyRate: dto.hourlyRate ?? null,
+    };
+
     try {
-      const user = this.usersDBService.repository.create(dto);
-      return await this.usersDBService.repository.save(user);
+      return await this.usersDBService.createWithTransaction(userData);
     } catch (error: unknown) {
       const pgError = error as { code?: string };
       if (pgError?.code === '23505') {
-        throw new ConflictException('A user with this clerk_id or email already exists');
+        throw new ConflictException(
+          'A user with this clerk_id or email already exists',
+        );
       }
       throw error;
     }
