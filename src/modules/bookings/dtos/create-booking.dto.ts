@@ -1,15 +1,16 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Expose } from 'class-transformer';
-import { IsUUID, IsDateString, IsOptional } from 'class-validator';
+import { IsInt, IsUUID, IsDateString, IsOptional, IsPositive } from 'class-validator';
 
 export class CreateBookingDto {
   @ApiProperty({
-    description: 'ID del estudiante',
-    example: 'b47a9a0f-4e6e-4bcb-8f13-ef8a0a3a2a12',
+    description: 'Internal numeric id of the student (UserEntity.id)',
+    example: 1,
   })
-  @IsUUID()
+  @IsInt()
+  @IsPositive()
   @Expose()
-  studentId: string;
+  studentId: number;
 
   @ApiProperty({
     description: 'ID del tutor',

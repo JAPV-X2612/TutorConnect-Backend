@@ -17,8 +17,6 @@ import { LearnerPreferenceEntity } from './learner-preference.entity';
  *
  * A user may hold either the TUTOR or LEARNER role. Authentication is delegated
  * to Clerk; the {@link clerkId} field is the authoritative external identifier.
- * The {@link password} column is retained for future direct-auth scenarios but
- * is not used while Clerk is active.
  *
  * @author TutorConnect Team
  */
@@ -38,6 +36,12 @@ export class UserEntity {
   clerkId: string;
 
   /**
+   * User's primary email address, synced from Clerk.
+   */
+  @Column({ name: 'email', type: 'varchar', length: 150, unique: true })
+  email: string;
+
+  /**
    * User's given name.
    */
   @Column({ name: 'first_name', type: 'varchar', length: 100 })
@@ -48,12 +52,6 @@ export class UserEntity {
    */
   @Column({ name: 'last_name', type: 'varchar', length: 100 })
   lastName: string;
-
-  /**
-   * Hashed password. Nullable because authentication is handled by Clerk.
-   */
-  @Column({ name: 'password', type: 'varchar', length: 255, nullable: true })
-  password: string | null;
 
   /**
    * Current account status.
@@ -75,6 +73,7 @@ export class UserEntity {
     type: 'enum',
     enum: UserRole,
     enumName: 'user_role',
+    default: UserRole.LEARNER,
   })
   role: UserRole;
 
