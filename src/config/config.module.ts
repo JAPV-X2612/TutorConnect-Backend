@@ -1,4 +1,3 @@
-
 import { Module } from '@nestjs/common';
 import { ConfigModule as NestConfigModule } from '@nestjs/config';
 import configuration from './configuration';
@@ -12,4 +11,3 @@ import configuration from './configuration';
   ],
 })
 export class ConfigModule {}
-

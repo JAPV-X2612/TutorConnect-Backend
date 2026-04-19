@@ -15,7 +15,10 @@ export class UpdateBookingDto {
   @Expose()
   endTime?: string;
 
-  @ApiPropertyOptional({ description: 'Estado', enum: ['pending', 'confirmed', 'cancelled'] })
+  @ApiPropertyOptional({
+    description: 'Estado',
+    enum: ['pending', 'confirmed', 'cancelled'],
+  })
   @IsOptional()
   @IsIn(['pending', 'confirmed', 'cancelled'])
   @Expose()

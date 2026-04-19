@@ -1,7 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Expose, Type } from 'class-transformer';
-import { BookingEntity } from '../../../database/entities/booking.entity';
-import { UserEntity } from '../../../database/entities/user.entity';
+import { UserEntity } from '../../../users/entities/user.entity';
 import { TutorEntity } from '../../../database/entities/tutor.entity';
 
 export class BookingDto {
@@ -27,7 +26,10 @@ export class BookingDto {
   @Expose()
   endTime?: Date;
 
-  @ApiProperty({ example: 'pending', enum: ['pending', 'confirmed', 'cancelled'] })
+  @ApiProperty({
+    example: 'pending',
+    enum: ['pending', 'confirmed', 'cancelled'],
+  })
   @Expose()
   status: 'pending' | 'confirmed' | 'cancelled';
 

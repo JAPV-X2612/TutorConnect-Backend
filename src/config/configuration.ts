@@ -17,5 +17,3 @@ export default () => ({
     webhookSecret: process.env.CLERK_WEBHOOK_SECRET || '',
   },
 });
-
-
