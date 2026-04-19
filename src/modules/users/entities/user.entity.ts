@@ -17,8 +17,6 @@ import { LearnerPreferenceEntity } from './learner-preference.entity';
  *
  * A user may hold either the TUTOR or LEARNER role. Authentication is delegated
  * to Clerk; the {@link clerkId} field is the authoritative external identifier.
- * The {@link password} column is retained for future direct-auth scenarios but
- * is not used while Clerk is active.
  *
  * @author TutorConnect Team
  */
@@ -38,6 +36,12 @@ export class UserEntity {
   clerkId: string;
 
   /**
+   * User's primary email address, synced from Clerk.
+   */
+  @Column({ name: 'email', type: 'varchar', length: 150, unique: true })
+  email: string;
+
+  /**
    * User's given name.
    */
   @Column({ name: 'first_name', type: 'varchar', length: 100 })
@@ -48,12 +52,6 @@ export class UserEntity {
    */
   @Column({ name: 'last_name', type: 'varchar', length: 100 })
   lastName: string;
-
-  /**
-   * Hashed password. Nullable because authentication is handled by Clerk.
-   */
-  @Column({ name: 'password', type: 'varchar', length: 255, nullable: true })
-  password: string | null;
 
   /**
    * Current account status.
@@ -75,6 +73,7 @@ export class UserEntity {
     type: 'enum',
     enum: UserRole,
     enumName: 'user_role',
+    default: UserRole.LEARNER,
   })
   role: UserRole;
 
@@ -95,6 +94,80 @@ export class UserEntity {
    */
   @DeleteDateColumn({ name: 'deleted_at', nullable: true })
   deletedAt: Date | null;
+
+  // ── Location & institutional fields ─────────────────────────────────────────
+
+  /**
+   * City where the user is located.
+   * Stored in uppercase for consistent regional search matching.
+   */
+  @Column({ name: 'city', type: 'varchar', length: 150, nullable: true })
+  city?: string | null;
+
+  /**
+   * Country of the user. Defaults to 'Colombia'.
+   */
+  @Column({ name: 'country', type: 'varchar', length: 100, default: 'Colombia' })
+  country?: string;
+
+  /**
+   * Name of the university or company the user belongs to.
+   * Stored in uppercase for consistent institutional search matching.
+   */
+  @Column({ name: 'organization_name', type: 'varchar', length: 255, nullable: true })
+  organizationName?: string | null;
+
+  /**
+   * Academic program or field of study.
+   */
+  @Column({ name: 'academic_program', type: 'varchar', length: 255, nullable: true })
+  academicProgram?: string | null;
+
+  // ── Learner-specific fields ──────────────────────────────────────────────────
+
+  /**
+   * Subject areas the learner is interested in. Stored as a JSON array.
+   * Only relevant when role is {@link UserRole.LEARNER}.
+   */
+  @Column({ name: 'interests', type: 'jsonb', nullable: true })
+  interests?: string[] | null;
+
+  /**
+   * Current academic semester of the learner.
+   * Only relevant when role is {@link UserRole.LEARNER}.
+   */
+  @Column({ name: 'current_semester', type: 'int', nullable: true })
+  currentSemester?: number | null;
+
+  // ── Tutor-specific fields ────────────────────────────────────────────────────
+
+  /**
+   * Subject areas in which the tutor offers services. Stored as a JSON array.
+   * Only relevant when role is {@link UserRole.TUTOR}.
+   */
+  @Column({ name: 'specialties', type: 'jsonb', nullable: true })
+  specialties?: string[] | null;
+
+  /**
+   * Number of years of tutoring or professional experience.
+   * Only relevant when role is {@link UserRole.TUTOR}.
+   */
+  @Column({ name: 'experience_years', type: 'int', nullable: true })
+  experienceYears?: number | null;
+
+  /**
+   * Indicates whether the tutor profile has been verified by TutorConnect.
+   * Only relevant when role is {@link UserRole.TUTOR}.
+   */
+  @Column({ name: 'is_verified', type: 'boolean', nullable: true })
+  isVerified?: boolean | null;
+
+  /**
+   * Tutor's hourly rate in the platform currency (COP).
+   * Only relevant when role is {@link UserRole.TUTOR}.
+   */
+  @Column({ name: 'hourly_rate', type: 'float', nullable: true })
+  hourlyRate?: number | null;
 
   // ── Relations ────────────────────────────────────────────────────────────────
 

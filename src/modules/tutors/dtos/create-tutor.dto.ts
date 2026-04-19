@@ -1,15 +1,16 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Expose } from 'class-transformer';
-import { IsString, IsOptional, IsArray, IsUUID, IsInt } from 'class-validator';
+import { IsString, IsOptional, IsArray, IsInt, IsPositive } from 'class-validator';
 
 export class CreateTutorDto {
   @ApiProperty({
-    description: 'Usuario asociado (ID)',
-    example: 'b47a9a0f-4e6e-4bcb-8f13-ef8a0a3a2a12',
+    description: 'Internal numeric id of the associated user (UserEntity.id)',
+    example: 1,
   })
-  @IsUUID()
+  @IsInt()
+  @IsPositive()
   @Expose()
-  userId: string;
+  userId: number;
 
   @ApiPropertyOptional({ description: 'Biografía del tutor' })
   @IsOptional()

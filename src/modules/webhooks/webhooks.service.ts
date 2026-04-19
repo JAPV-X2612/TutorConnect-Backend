@@ -1,9 +1,9 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Webhook } from 'svix';
-import { UserEntity } from '../../users/entities/user.entity';
-import { Role } from '../../common/enums/role.enum';
+import { UserEntity } from '../users/entities/user.entity';
+import { UserRole } from '../../common/enums/user-role.enum';
 
 interface SvixHeaders {
   'svix-id': string;
@@ -11,13 +11,50 @@ interface SvixHeaders {
   'svix-signature': string;
 }
 
+interface ClerkEmailAddress {
+  id: string;
+  email_address: string;
+}
+
+interface ClerkUserCreatedData {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  primary_email_address_id: string;
+  email_addresses: ClerkEmailAddress[];
+}
+
+interface ClerkWebhookEvent {
+  type: string;
+  data: ClerkUserCreatedData;
+}
+
+/**
+ * Handles incoming Clerk webhook events and synchronises the platform database.
+ *
+ * When a new identity is created in Clerk the `user.created` event fires this
+ * service, which upserts the corresponding {@link UserEntity} in PostgreSQL.
+ * Webhook authenticity is verified using the Svix library.
+ *
+ * @author TutorConnect Team
+ */
 @Injectable()
 export class WebhooksService {
+  private readonly logger = new Logger(WebhooksService.name);
+
   constructor(
     @InjectRepository(UserEntity)
     private readonly userRepository: Repository<UserEntity>,
   ) {}
 
+  /**
+   * Verifies the Svix signature and dispatches the event to the appropriate handler.
+   *
+   * @param payload - Raw request body bytes (must be unparsed).
+   * @param headers - Svix verification headers from the incoming request.
+   * @returns `{ received: true }` on success.
+   * @throws {UnauthorizedException} When the Svix signature is invalid.
+   */
   async handleClerkWebhook(
     payload: Buffer,
     headers: SvixHeaders,
@@ -25,45 +62,54 @@ export class WebhooksService {
     const secret = process.env.CLERK_WEBHOOK_SECRET as string;
     const wh = new Webhook(secret);
 
-    let event: any;
+    let event: ClerkWebhookEvent;
     try {
-      event = wh.verify(payload, headers as any);
+      event = wh.verify(payload, headers as unknown as Record<string, string>) as ClerkWebhookEvent;
     } catch {
-      throw new UnauthorizedException('Firma inválida');
+      throw new UnauthorizedException('Webhook signature verification failed');
     }
 
     if (event.type === 'user.created') {
-      await this.createUserFromClerk(event.data); // TODO: Fix error
+      await this.createUserFromClerk(event.data);
     }
 
     return { received: true };
   }
 
-  private async createUserFromClerk(data: any): Promise<void> {
-    const clerkId: string = data.id; // TODO: Fix error
-    const primaryEmail: string =
-      data.email_addresses?.find(
-        (e: any) => e.id === data.primary_email_address_id, // TODO: Fix error
-      )?.email_address ?? // TODO: Fix error
-      data.email_addresses?.[0]?.email_address ?? // TODO: Fix error
+  /**
+   * Creates a local user profile from the Clerk `user.created` event payload.
+   *
+   * Skips creation if a profile for the given Clerk id already exists (idempotent).
+   *
+   * @param data - Raw Clerk user object from the webhook event.
+   */
+  private async createUserFromClerk(data: ClerkUserCreatedData): Promise<void> {
+    const clerkId = data.id;
+
+    const existing = await this.userRepository.findOne({ where: { clerkId } });
+    if (existing) {
+      this.logger.debug(`User with clerk_id=${clerkId} already exists — skipping creation`);
+      return;
+    }
+
+    const primaryEmail =
+      data.email_addresses?.find((e) => e.id === data.primary_email_address_id)
+        ?.email_address ??
+      data.email_addresses?.[0]?.email_address ??
       '';
 
-    const existing = await this.userRepository.findOne({
-      where: { clerkId },
-    });
-    if (existing) return;
-
-    const fullName =
-      [data.first_name, data.last_name].filter(Boolean).join(' ') || // TODO: Fix error
-      primaryEmail;
+    const firstName = data.first_name ?? '';
+    const lastName = data.last_name ?? '';
 
     const user = this.userRepository.create({
       clerkId,
       email: primaryEmail,
-      name: fullName,
-      role: Role.APRENDIZ,
+      firstName,
+      lastName,
+      role: UserRole.LEARNER,
     });
 
     await this.userRepository.save(user);
+    this.logger.log(`Platform profile created for clerk_id=${clerkId}`);
   }
 }
