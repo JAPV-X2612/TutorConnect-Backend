@@ -22,13 +22,10 @@ import { UserDto } from './dtos/user.dto';
 import { CreateUserDto } from './dtos/create-user.dto';
 import { UpdateUserDto } from './dtos/update-user.dto';
 import { ClerkJwtGuard } from '../auth/clerk-jwt.guard';
-import { RoleGuard } from '../auth/role.guard';
-import { Roles } from '../auth/role.decorator';
-import { UserRole } from '../../common/enums/user-role.enum';
 
 /** Typed shape of the authenticated user attached by {@link ClerkJwtGuard}. */
 interface AuthenticatedRequest extends Request {
-  user: { clerk_id: string; role: UserRole };
+  user: { clerk_id: string; role: string | null };
 }
 
 /**
@@ -52,9 +49,7 @@ export class UsersController {
    */
   @Get('me')
   @HttpCode(HttpStatus.OK)
-  @UseGuards(RoleGuard)
-  @Roles(UserRole.LEARNER)
-  @ApiOperation({ summary: 'Get current learner profile' })
+  @ApiOperation({ summary: 'Get the profile of the currently authenticated user' })
   @ApiResponse({ status: 200, type: UserDto })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   async getMe(@Req() req: AuthenticatedRequest): Promise<UserDto> {
