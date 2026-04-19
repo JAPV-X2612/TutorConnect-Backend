@@ -15,17 +15,17 @@ import { TutorEstado } from '../../common/enums/tutor-estado.enum';
 @Entity('tutors')
 export class TutorEntity {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  id!: string;
 
   @OneToOne(() => UserEntity, { onDelete: 'CASCADE' })
   @JoinColumn()
-  user: UserEntity;
+  user!: UserEntity;
 
   @Column({ type: 'varchar', length: 100 })
-  nombre: string;
+  nombre!: string;
 
   @Column({ type: 'varchar', length: 100 })
-  apellido: string;
+  apellido!: string;
 
   @Column({ type: 'varchar', length: 500, nullable: true })
   descripcion?: string;
@@ -36,10 +36,10 @@ export class TutorEntity {
     enumName: 'tutor_estado_enum',
     default: TutorEstado.PENDIENTE,
   })
-  estado: TutorEstado;
+  estado!: TutorEstado;
 
   @OneToMany(() => CertificacionEntity, (cert) => cert.tutor)
-  certificaciones: CertificacionEntity[];
+  certificaciones!: CertificacionEntity[];
 
   @Column({ type: 'text', nullable: true })
   bio?: string;
@@ -53,9 +53,15 @@ export class TutorEntity {
   @Column({ type: 'int', nullable: true })
   experienceYears?: number;
 
+  @Column({ type: 'float', nullable: true, name: 'precio_hora' })
+  precioHora?: number;
+
+  @Column({ type: 'boolean', default: false })
+  disponible!: boolean;
+
   @CreateDateColumn({ name: 'created_at' })
-  createdAt: Date;
+  createdAt!: Date;
 
   @UpdateDateColumn({ name: 'updated_at' })
-  updatedAt: Date;
+  updatedAt!: Date;
 }
