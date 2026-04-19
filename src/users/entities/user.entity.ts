@@ -10,14 +10,14 @@ import { Role } from '../../common/enums/role.enum';
 @Entity('users')
 export class UserEntity {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  id!: string;
 
   @Index('IDX_users_clerk_id', { unique: true })
   @Column({ name: 'clerk_id', type: 'varchar', length: 255 })
-  clerkId: string;
+  clerkId!: string;
 
   @Column({ name: 'email', type: 'varchar', length: 150, unique: true })
-  email: string;
+  email!: string;
 
   @Column({
     name: 'rol',
@@ -26,12 +26,12 @@ export class UserEntity {
     enumName: 'users_rol_enum',
     default: Role.APRENDIZ,
   })
-  role: Role;
+  role!: Role;
 
   @CreateDateColumn({ name: 'created_at' })
-  createdAt: Date;
+  createdAt!: Date;
 
   // Compatibility fields used by existing DTOs/services.
   name?: string;
-  updatedAt?: Date; // TODO: Validate use
+  updatedAt?: Date;
 }

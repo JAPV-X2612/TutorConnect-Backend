@@ -6,6 +6,7 @@ import {
   Delete,
   Body,
   Param,
+  Query,
   Req,
   HttpCode,
   HttpStatus,
@@ -71,8 +72,8 @@ export class TutorsController {
 
   @Get()
   @HttpCode(HttpStatus.OK)
-  async findAll(): Promise<TutorEntity[]> {
-    return this.tutorsService.findAll();
+  async findAll(@Query('subject') subject?: string): Promise<TutorEntity[]> {
+    return this.tutorsService.findAll(subject);
   }
 
   @Get(':id')

@@ -47,6 +47,19 @@ async function bootstrap() {
     }),
   );
 
+  app.enableCors({
+    origin: [
+      'http://localhost:8081',
+      'http://localhost:8082',
+      'http://localhost:19000',
+      'http://localhost:19006',
+    ],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  });
+
+  app.setGlobalPrefix('api');
+
   await app.listen(process.env.PORT || 3000);
 }
-bootstrap(); // TODO: Fix warning
+bootstrap();
