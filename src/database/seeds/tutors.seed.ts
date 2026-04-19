@@ -6,7 +6,7 @@ import { UserEntity } from '../../users/entities/user.entity';
 import { TutorEntity } from '../entities/tutor.entity';
 import { CertificacionEntity } from '../entities/certificacion.entity';
 import { BookingEntity } from '../entities/booking.entity';
-import { Role } from '../../common/enums/role.enum';
+import { UserRole } from '../../common/enums/user-role.enum';
 import { TutorEstado } from '../../common/enums/tutor-estado.enum';
 
 function loadEnvFile(filePath: string): void {
@@ -124,7 +124,9 @@ async function seed(): Promise<void> {
     const user = userRepo.create({
       clerkId: data.clerkId,
       email: data.email,
-      role: Role.APRENDIZ,
+      firstName: data.nombre,
+      lastName: data.apellido,
+      role: UserRole.TUTOR,
     });
     const savedUser = await userRepo.save(user);
 

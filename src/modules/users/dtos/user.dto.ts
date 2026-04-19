@@ -1,28 +1,47 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Expose } from 'class-transformer';
+import { UserRole } from '../../../common/enums/user-role.enum';
+import { UserStatus } from '../../../common/enums/user-status.enum';
 
+/**
+ * Serialized representation of a user returned in API responses.
+ *
+ * @author TutorConnect Team
+ */
 export class UserDto {
-  @ApiProperty({ example: 'b47a9a0f-4e6e-4bcb-8f13-ef8a0a3a2a12' })
+  @ApiProperty({ example: 1 })
   @Expose()
-  id: string;
+  id: number;
 
-  @ApiProperty({ example: 'María López' })
+  @ApiProperty({ example: 'user_2abc123' })
   @Expose()
-  name: string;
+  clerkId: string;
 
   @ApiProperty({ example: 'maria@example.com' })
   @Expose()
   email: string;
 
-  @ApiProperty({ example: 'student', enum: ['student', 'tutor'] })
+  @ApiProperty({ example: 'María' })
   @Expose()
-  role: 'student' | 'tutor';
+  firstName: string;
 
-  @ApiProperty({ example: '2026-02-17T18:05:02.000Z' })
+  @ApiProperty({ example: 'López' })
+  @Expose()
+  lastName: string;
+
+  @ApiProperty({ example: UserRole.LEARNER, enum: UserRole })
+  @Expose()
+  role: UserRole;
+
+  @ApiProperty({ example: UserStatus.ACTIVE, enum: UserStatus })
+  @Expose()
+  status: UserStatus;
+
+  @ApiProperty({ example: '2026-04-18T18:05:02.000Z' })
   @Expose()
   createdAt: Date;
 
-  @ApiProperty({ example: '2026-02-17T18:05:02.000Z' })
+  @ApiProperty({ example: '2026-04-18T18:05:02.000Z' })
   @Expose()
   updatedAt: Date;
 }
