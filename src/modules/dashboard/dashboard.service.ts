@@ -1,15 +1,43 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { BookingEntity } from '../bookings/entities/booking.entity';
 import { ReviewEntity } from '../reviews/entities/review.entity';
+import { UserEntity } from '../users/entities/user.entity';
 import { BookingStatus } from '../../common/enums/booking-status.enum';
+import {
+  LearnerDashboardDto,
+  UpcomingSessionDto,
+  WeeklyProgressDto,
+} from './dtos/learner-dashboard.dto';
 import {
   MetricasTutorDto,
   ProximaSesionDto,
   TutorDashboardResponseDto,
 } from './dto/tutor-dashboard.dto';
 
+/** Statuses that count as "active" — non-cancelled, non-expired bookings. */
+const ACTIVE_BOOKING_STATUSES: BookingStatus[] = [
+  BookingStatus.PENDING_CONFIRMATION,
+  BookingStatus.CONFIRMED,
+  BookingStatus.COMPLETED,
+  BookingStatus.RESCHEDULED,
+];
+
+/**
+ * Business logic service for the dashboard module.
+ *
+ * Aggregates two role-specific payloads:
+ * - Learner: weekly progress (completed vs. total bookings) and upcoming
+ *   sessions (HU-06).
+ * - Tutor: monthly metrics (sessions, reviews, average rating) and upcoming
+ *   confirmed sessions (HU-07).
+ *
+ * Both flows resolve the user from the verified Clerk JWT — the clerkId is
+ * never accepted from request payloads.
+ *
+ * @author TutorConnect Team
+ */
 @Injectable()
 export class DashboardService {
   constructor(
@@ -17,7 +45,111 @@ export class DashboardService {
     private readonly bookingRepo: Repository<BookingEntity>,
     @InjectRepository(ReviewEntity)
     private readonly reviewRepo: Repository<ReviewEntity>,
+    @InjectRepository(UserEntity)
+    private readonly userRepo: Repository<UserEntity>,
   ) {}
+
+  // ── Learner dashboard (HU-06) ─────────────────────────────────────────────
+
+  /**
+   * Builds the full learner dashboard payload.
+   *
+   * @param clerkId - Clerk user ID extracted from the verified JWT.
+   * @returns Aggregated dashboard data.
+   * @throws {NotFoundException} When no user record exists for the given clerkId.
+   */
+  async getLearnerDashboard(clerkId: string): Promise<LearnerDashboardDto> {
+    const user = await this.userRepo.findOne({ where: { clerkId } });
+    if (!user) {
+      throw new NotFoundException(`User with clerkId ${clerkId} not found`);
+    }
+
+    const [weeklyProgress, upcomingSessions] = await Promise.all([
+      this.buildWeeklyProgress(user.id),
+      this.buildUpcomingSessions(user.id),
+    ]);
+
+    return { weeklyProgress, upcomingSessions };
+  }
+
+  /**
+   * Counts completed vs. total active bookings in the current ISO week.
+   *
+   * @param userId - Internal user primary key.
+   */
+  private async buildWeeklyProgress(userId: number): Promise<WeeklyProgressDto> {
+    const { weekStart, weekEnd } = this.currentWeekRange();
+
+    const base = () =>
+      this.bookingRepo
+        .createQueryBuilder('b')
+        .innerJoin('b.learner', 'l')
+        .where('l.id = :userId', { userId })
+        .andWhere('b.scheduledAt >= :weekStart', { weekStart })
+        .andWhere('b.scheduledAt <= :weekEnd', { weekEnd });
+
+    const [completed, total] = await Promise.all([
+      base()
+        .andWhere('b.status = :completed', { completed: BookingStatus.COMPLETED })
+        .getCount(),
+      base()
+        .andWhere('b.status IN (:...statuses)', { statuses: ACTIVE_BOOKING_STATUSES })
+        .getCount(),
+    ]);
+
+    return { completed, total };
+  }
+
+  /**
+   * Fetches the next 5 active upcoming bookings for the learner ordered
+   * chronologically. The `subject` is derived from the tutor's first registered
+   * specialty (UserEntity.specialties).
+   *
+   * @param userId - Internal user primary key.
+   */
+  private async buildUpcomingSessions(
+    userId: number,
+  ): Promise<UpcomingSessionDto[]> {
+    const bookings = await this.bookingRepo
+      .createQueryBuilder('b')
+      .innerJoinAndSelect('b.learner', 'l')
+      .innerJoinAndSelect('b.tutor', 't')
+      .where('l.id = :userId', { userId })
+      .andWhere('b.scheduledAt > :now', { now: new Date() })
+      .andWhere('b.status IN (:...statuses)', { statuses: ACTIVE_BOOKING_STATUSES })
+      .orderBy('b.scheduledAt', 'ASC')
+      .take(5)
+      .getMany();
+
+    return bookings.map((b) => ({
+      id: String(b.id),
+      subject: (b.tutor.specialties ?? [])[0] ?? 'Sesión',
+      tutorName: `${b.tutor.firstName} ${b.tutor.lastName}`.trim(),
+      scheduledAt: b.scheduledAt,
+      status: b.status,
+    }));
+  }
+
+  /**
+   * Computes the Monday 00:00 – Sunday 23:59:59 range for the current week.
+   */
+  private currentWeekRange(): { weekStart: Date; weekEnd: Date } {
+    const now = new Date();
+    const dayOfWeek = now.getDay();
+    const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+
+    const weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - daysToMonday);
+    weekStart.setHours(0, 0, 0, 0);
+
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 6);
+    weekEnd.setHours(23, 59, 59, 999);
+
+    return { weekStart, weekEnd };
+  }
+
+  // ── Tutor dashboard (HU-07) ───────────────────────────────────────────────
 
   async getTutorDashboard(clerkId: string): Promise<TutorDashboardResponseDto> {
     const [metricas, proximas_sesiones] = await Promise.all([
@@ -28,8 +160,7 @@ export class DashboardService {
     return { metricas, proximas_sesiones };
   }
 
-  // ── Métricas del mes actual ────────────────────────────────────────────────
-
+  /** Métricas del mes actual para el tutor. */
   private async getMetricasTutor(clerkId: string): Promise<MetricasTutorDto> {
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -62,15 +193,12 @@ export class DashboardService {
       moneda: 'COP',
       periodo,
       calificacion_promedio:
-        promedioRaw != null
-          ? Math.round(Number(promedioRaw) * 100) / 100
-          : null,
+        promedioRaw != null ? Math.round(Number(promedioRaw) * 100) / 100 : null,
       total_resenas: Number(reviewRaw?.total_resenas ?? 0),
     };
   }
 
-  // ── Próximas 5 sesiones agendadas ─────────────────────────────────────────
-
+  /** Próximas 5 sesiones agendadas (CONFIRMED) del tutor. */
   private async getProximasSesionesTutor(
     clerkId: string,
   ): Promise<ProximaSesionDto[]> {
