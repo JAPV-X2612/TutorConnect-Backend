@@ -1,0 +1,5 @@
+export enum EstadoTutor {
+  PENDIENTE = 'PENDIENTE',
+  VERIFICADO = 'VERIFICADO',
+  RECHAZADO = 'RECHAZADO',
+}

@@ -1,17 +1,18 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Expose, Type } from 'class-transformer';
-import { TutorEntity } from '../../../database/entities/tutor.entity';
-import { UserEntity } from '../../../database/entities/user.entity';
+import { Expose } from 'class-transformer';
 
 export class TutorDto {
   @ApiProperty({ example: 'b47a9a0f-4e6e-4bcb-8f13-ef8a0a3a2a12' })
   @Expose()
   id: string;
 
-  @ApiProperty({ type: () => UserEntity })
+  @ApiProperty({ example: 'user_2abc123' })
   @Expose()
-  @Type(() => UserEntity)
-  user: UserEntity;
+  clerkId: string;
+
+  @ApiProperty({ example: 'tutor@example.com' })
+  @Expose()
+  email: string;
 
   @ApiProperty({ description: 'Biografía del tutor', required: false })
   @Expose()
