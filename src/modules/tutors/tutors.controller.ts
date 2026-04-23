@@ -27,6 +27,16 @@ import { ClerkJwtGuard } from '../auth/clerk-jwt.guard';
 export class TutorsController {
   constructor(private readonly tutorsService: TutorsService) {}
 
+  // ── GET /tutors/me ───────────────────────────────────────────────────────
+
+  @Get('me')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(ClerkJwtGuard)
+  async getMe(@Req() req: Request) {
+    const { clerk_id } = (req as any).user;
+    return this.tutorsService.getMe(clerk_id);
+  }
+
   // ── POST /tutors/register ────────────────────────────────────────────────
 
   @Post('register')

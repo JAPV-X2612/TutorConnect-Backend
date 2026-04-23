@@ -25,6 +25,7 @@ export class ClerkJwtGuard implements CanActivate {
 
       request.user = {
         clerk_id: payload.sub,
+        sessionId: payload.sid,
         role: (payload as any).role as string,
       };
 

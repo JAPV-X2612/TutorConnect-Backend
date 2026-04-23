@@ -3,6 +3,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { DataSource } from 'typeorm';
 import { BookingEntity } from './database/entities/booking.entity';
+import { CertificacionEntity } from './database/entities/certificacion.entity';
 import { TutorEntity } from './database/entities/tutor.entity';
 import { UserEntity } from './users/entities/user.entity';
 
@@ -44,7 +45,7 @@ function getDatabaseUrl(): string {
 export default new DataSource({
   type: 'postgres',
   url: getDatabaseUrl(),
-  entities: [UserEntity, TutorEntity, BookingEntity],
+  entities: [UserEntity, TutorEntity, CertificacionEntity, BookingEntity],
   migrations: [path.join(__dirname, 'migrations/*{.ts,.js}')],
   synchronize: false,
   logging: process.env.NODE_ENV !== 'production',

@@ -2,24 +2,25 @@ import {
   Entity,
   PrimaryGeneratedColumn,
   Column,
-  OneToOne,
+  Index,
   OneToMany,
-  JoinColumn,
   CreateDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { UserEntity } from './user.entity';
 import { CertificacionEntity } from './certificacion.entity';
-import { TutorEstado } from '../../common/enums/tutor-estado.enum';
+import { EstadoTutor } from '../../common/enums/estado-tutor.enum';
 
 @Entity('tutors')
 export class TutorEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @OneToOne(() => UserEntity, { onDelete: 'CASCADE' })
-  @JoinColumn()
-  user: UserEntity;
+  @Index()
+  @Column({ name: 'clerk_id', type: 'varchar', unique: true })
+  clerkId: string;
+
+  @Column({ type: 'varchar', unique: true })
+  email: string;
 
   @Column({ type: 'varchar', length: 100 })
   nombre: string;
@@ -27,16 +28,16 @@ export class TutorEntity {
   @Column({ type: 'varchar', length: 100 })
   apellido: string;
 
-  @Column({ type: 'varchar', length: 500, nullable: true })
+  @Column({ type: 'text', nullable: true })
   descripcion?: string;
 
   @Column({
     type: 'enum',
-    enum: TutorEstado,
-    enumName: 'tutor_estado_enum',
-    default: TutorEstado.PENDIENTE,
+    enum: EstadoTutor,
+    enumName: 'estado_tutor_enum',
+    default: EstadoTutor.PENDIENTE,
   })
-  estado: TutorEstado;
+  estado: EstadoTutor;
 
   @OneToMany(() => CertificacionEntity, (cert) => cert.tutor)
   certificaciones: CertificacionEntity[];
