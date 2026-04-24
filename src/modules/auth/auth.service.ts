@@ -1,6 +1,17 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { createClerkClient } from '@clerk/backend';
 
+/**
+ * Authentication service for MOD-AUT-001.
+ *
+ * Responsible solely for identity verification: "who is the user?".
+ * Profile management ("what does the user do?") lives in {@link UsersService}.
+ *
+ * JWT validation is performed upstream by {@link ClerkJwtGuard} before any
+ * method here is invoked; this service operates on already-verified identities.
+ *
+ * @author TutorConnect Team
+ */
 @Injectable()
 export class AuthService {
   private readonly clerk = createClerkClient({

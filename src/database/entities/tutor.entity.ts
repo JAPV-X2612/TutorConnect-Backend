@@ -13,7 +13,7 @@ import { EstadoTutor } from '../../common/enums/estado-tutor.enum';
 @Entity('tutors')
 export class TutorEntity {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  id!: string;
 
   @Index()
   @Column({ name: 'clerk_id', type: 'varchar', unique: true })
@@ -23,10 +23,10 @@ export class TutorEntity {
   email: string;
 
   @Column({ type: 'varchar', length: 100 })
-  nombre: string;
+  nombre!: string;
 
   @Column({ type: 'varchar', length: 100 })
-  apellido: string;
+  apellido!: string;
 
   @Column({ type: 'text', nullable: true })
   descripcion?: string;
@@ -40,7 +40,7 @@ export class TutorEntity {
   estado: EstadoTutor;
 
   @OneToMany(() => CertificacionEntity, (cert) => cert.tutor)
-  certificaciones: CertificacionEntity[];
+  certificaciones!: CertificacionEntity[];
 
   @Column({ type: 'text', nullable: true })
   bio?: string;
@@ -54,9 +54,15 @@ export class TutorEntity {
   @Column({ type: 'int', nullable: true })
   experienceYears?: number;
 
+  @Column({ type: 'float', nullable: true, name: 'precio_hora' })
+  precioHora?: number;
+
+  @Column({ type: 'boolean', default: false })
+  disponible!: boolean;
+
   @CreateDateColumn({ name: 'created_at' })
-  createdAt: Date;
+  createdAt!: Date;
 
   @UpdateDateColumn({ name: 'updated_at' })
-  updatedAt: Date;
+  updatedAt!: Date;
 }

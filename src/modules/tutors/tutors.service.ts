@@ -94,7 +94,12 @@ export class TutorsService {
     tutorId: string,
     clerkId: string,
     file: Express.Multer.File,
-  ): Promise<{ id: string; nombre_archivo: string; s3_url: string; mime_type: string }> {
+  ): Promise<{
+    id: string;
+    nombre_archivo: string;
+    s3_url: string;
+    mime_type: string;
+  }> {
     const tutor = await this.tutorRepository.findOne({
       where: { id: tutorId },
       relations: ['certificaciones'],
@@ -109,12 +114,14 @@ export class TutorsService {
       throw new BadRequestException('El archivo no puede superar 5 MB');
     }
     if (tutor.certificaciones.length >= MAX_CERTIFICACIONES) {
-      throw new BadRequestException('No se pueden subir más de 10 certificaciones');
+      throw new BadRequestException(
+        'No se pueden subir más de 10 certificaciones',
+      );
     }
 
     const s3Key = `certificaciones/${tutorId}/${randomUUID()}-${file.originalname}`;
 
-    await this.storageService.uploadFile(s3Key, file.buffer, file.mimetype);
+    this.storageService.uploadFile(s3Key, file.buffer, file.mimetype);
 
     const s3Url = await this.storageService.getPresignedUrl(s3Key, 900);
 
@@ -146,7 +153,9 @@ export class TutorsService {
       created_at: Date;
     }>
   > {
-    const tutor = await this.tutorRepository.findOne({ where: { id: tutorId } });
+    const tutor = await this.tutorRepository.findOne({
+      where: { id: tutorId },
+    });
     if (!tutor) throw new NotFoundException('Tutor no encontrado');
 
     const certs = await this.certRepository.find({
@@ -159,7 +168,7 @@ export class TutorsService {
         id: cert.id,
         nombre_archivo: cert.nombreArchivo,
         mime_type: cert.mimeType,
-        url_presignada: await this.storageService.getPresignedUrl(cert.s3Key, 900),
+        url_presignada: this.storageService.getPresignedUrl(cert.s3Key, 900),
         created_at: cert.createdAt,
       })),
     );
@@ -176,8 +185,8 @@ export class TutorsService {
       experienceYears: dto.experienceYears,
     } as any);
 
-    const saved = await this.tutorRepository.save(tutor as any);
-    return Array.isArray(saved) ? saved[0] : saved;
+    const saved = await this.tutorRepository.save(tutor as any); // TODO: Fix warning
+    return Array.isArray(saved) ? saved[0] : saved; // TODO: Fix warning
   }
 
   async findAll(): Promise<TutorEntity[]> {
@@ -193,8 +202,8 @@ export class TutorsService {
   async update(id: string, dto: UpdateTutorDto): Promise<TutorEntity> {
     const tutor = await this.findOne(id);
     Object.assign(tutor, dto as any);
-    const saved = await this.tutorRepository.save(tutor as any);
-    return Array.isArray(saved) ? saved[0] : saved;
+    const saved = await this.tutorRepository.save(tutor as any); // TODO: Fix warning
+    return Array.isArray(saved) ? saved[0] : saved; // TODO: Fix warning
   }
 
   async remove(id: string): Promise<void> {

@@ -6,10 +6,11 @@ import { TutorEntity } from '../../database/entities/tutor.entity';
 import { CertificacionEntity } from '../../database/entities/certificacion.entity';
 import { TutorsDBService } from '../../database/dbservices/tutors.dbservice';
 import { StorageModule } from '../../storage/storage.module';
+import { TutorTopicEntity } from './entities/tutor-topic.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([TutorEntity, CertificacionEntity]),
+    TypeOrmModule.forFeature([TutorEntity, CertificacionEntity, TutorTopicEntity]),
     StorageModule,
   ],
   controllers: [TutorsController],
