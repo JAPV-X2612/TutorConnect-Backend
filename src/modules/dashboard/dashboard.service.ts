@@ -1,8 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { BookingEntity } from '../../database/entities/booking.entity';
+import { BookingEntity } from '../bookings/entities/booking.entity';
 import { ReviewEntity } from '../reviews/entities/review.entity';
+import { BookingStatus } from '../../common/enums/booking-status.enum';
 import {
   MetricasTutorDto,
   ProximaSesionDto,
@@ -39,12 +40,11 @@ export class DashboardService {
       this.bookingRepo
         .createQueryBuilder('b')
         .select('COUNT(b.id)', 'total_sesiones')
-        .addSelect('COALESCE(SUM(b.price), 0)', 'ingresos_totales')
         .innerJoin('b.tutor', 't', 't.clerkId = :clerkId', { clerkId })
-        .where('b.status = :status', { status: 'completed' })
-        .andWhere('b.startTime >= :monthStart', { monthStart })
-        .andWhere('b.startTime < :monthEnd', { monthEnd })
-        .getRawOne<{ total_sesiones: string; ingresos_totales: string }>(),
+        .where('b.status = :status', { status: BookingStatus.COMPLETED })
+        .andWhere('b.scheduledAt >= :monthStart', { monthStart })
+        .andWhere('b.scheduledAt < :monthEnd', { monthEnd })
+        .getRawOne<{ total_sesiones: string }>(),
 
       this.reviewRepo
         .createQueryBuilder('r')
@@ -58,7 +58,7 @@ export class DashboardService {
 
     return {
       total_sesiones: Number(sessionRaw?.total_sesiones ?? 0),
-      ingresos_totales: Number(sessionRaw?.ingresos_totales ?? 0),
+      ingresos_totales: 0,
       moneda: 'COP',
       periodo,
       calificacion_promedio:
@@ -76,21 +76,21 @@ export class DashboardService {
   ): Promise<ProximaSesionDto[]> {
     const bookings = await this.bookingRepo
       .createQueryBuilder('b')
-      .leftJoinAndSelect('b.student', 'student')
+      .leftJoinAndSelect('b.learner', 'learner')
       .innerJoin('b.tutor', 't', 't.clerkId = :clerkId', { clerkId })
-      .where('b.status = :status', { status: 'confirmed' })
-      .andWhere('b.startTime > :now', { now: new Date() })
-      .orderBy('b.startTime', 'ASC')
+      .where('b.status = :status', { status: BookingStatus.CONFIRMED })
+      .andWhere('b.scheduledAt > :now', { now: new Date() })
+      .orderBy('b.scheduledAt', 'ASC')
       .take(5)
       .getMany();
 
     return bookings.map((b) => ({
-      id: b.id,
-      fecha: b.startTime,
-      aprendiz_nombre: b.student
-        ? `${b.student.firstName} ${b.student.lastName}`.trim()
+      id: String(b.id),
+      fecha: b.scheduledAt,
+      aprendiz_nombre: b.learner
+        ? `${b.learner.firstName} ${b.learner.lastName}`.trim()
         : 'N/A',
-      materia: b.subject,
+      materia: null,
     }));
   }
 }

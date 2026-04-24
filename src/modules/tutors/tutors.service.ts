@@ -16,6 +16,9 @@ import { CreateTutorDto } from './dtos/create-tutor.dto';
 import { UpdateTutorDto } from './dtos/update-tutor.dto';
 import { RegisterTutorDto } from './dtos/register-tutor.dto';
 import { EstadoTutor } from '../../common/enums/estado-tutor.enum';
+import { UserEntity } from '../users/entities/user.entity';
+import { UserRole } from '../../common/enums/user-role.enum';
+import { UserStatus } from '../../common/enums/user-status.enum';
 
 const ALLOWED_MIME_TYPES = ['application/pdf', 'image/jpeg', 'image/png'];
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
@@ -32,6 +35,8 @@ export class TutorsService {
     private readonly tutorRepository: Repository<TutorEntity>,
     @InjectRepository(CertificacionEntity)
     private readonly certRepository: Repository<CertificacionEntity>,
+    @InjectRepository(UserEntity)
+    private readonly userRepository: Repository<UserEntity>,
     private readonly storageService: StorageService,
   ) {}
 
@@ -76,8 +81,22 @@ export class TutorsService {
 
     const saved = await this.tutorRepository.save(tutor);
 
+    // Upsert into unified user table so GET /users/me works for tutors.
+    const existingUser = await this.userRepository.findOne({ where: { clerkId } });
+    if (!existingUser) {
+      const userRow = this.userRepository.create({
+        clerkId,
+        email: dto.email,
+        firstName: dto.nombre,
+        lastName: dto.apellido,
+        role: UserRole.TUTOR,
+        status: UserStatus.ACTIVE,
+      });
+      await this.userRepository.save(userRow);
+    }
+
     await this.clerk.users.updateUserMetadata(clerkId, {
-      publicMetadata: { role: 'tutor' },
+      publicMetadata: { role: 'TUTOR' },
     });
 
     return {
