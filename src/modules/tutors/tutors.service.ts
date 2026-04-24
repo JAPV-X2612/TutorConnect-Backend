@@ -121,7 +121,7 @@ export class TutorsService {
 
     const s3Key = `certificaciones/${tutorId}/${randomUUID()}-${file.originalname}`;
 
-    this.storageService.uploadFile(s3Key, file.buffer, file.mimetype);
+    await this.storageService.uploadFile(s3Key, file.buffer, file.mimetype);
 
     const s3Url = await this.storageService.getPresignedUrl(s3Key, 900);
 
@@ -168,7 +168,7 @@ export class TutorsService {
         id: cert.id,
         nombre_archivo: cert.nombreArchivo,
         mime_type: cert.mimeType,
-        url_presignada: this.storageService.getPresignedUrl(cert.s3Key, 900),
+        url_presignada: await this.storageService.getPresignedUrl(cert.s3Key, 900),
         created_at: cert.createdAt,
       })),
     );

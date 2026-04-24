@@ -27,7 +27,13 @@ export class BookingEntity {
   endTime?: Date;
 
   @Column({ length: 20, default: 'pending' })
-  status: 'pending' | 'confirmed' | 'cancelled';
+  status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
+
+  @Column({ type: 'varchar', length: 150, nullable: true })
+  subject: string | null;
+
+  @Column({ type: 'numeric', precision: 12, scale: 2, nullable: true })
+  price: number | null;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
