@@ -47,32 +47,6 @@ export class UsersService {
   async create(dto: CreateUserDto): Promise<UserEntity> {
     const role = dto.role ?? UserRole.LEARNER;
 
-    if (role === UserRole.LEARNER) {
-      if (!dto.interests?.length) {
-        throw new BadRequestException(
-          'Learner registration requires at least one interest',
-        );
-      }
-      if (!dto.organizationName) {
-        throw new BadRequestException(
-          'Learner registration requires a university or organisation name',
-        );
-      }
-    }
-
-    if (role === UserRole.TUTOR) {
-      if (!dto.specialties?.length) {
-        throw new BadRequestException(
-          'Tutor registration requires at least one specialty',
-        );
-      }
-      if (dto.hourlyRate === undefined || dto.hourlyRate === null) {
-        throw new BadRequestException(
-          'Tutor registration requires an hourly rate',
-        );
-      }
-    }
-
     const userData: Partial<UserEntity> = {
       clerkId: dto.clerkId,
       email: dto.email,
@@ -123,7 +97,9 @@ export class UsersService {
    * @throws {NotFoundException} When no user is found for the given id.
    */
   async findOne(id: number): Promise<UserEntity> {
-    const user = await this.usersDBService.repository.findOne({ where: { id } });
+    const user = await this.usersDBService.repository.findOne({
+      where: { id },
+    });
     if (!user) {
       throw new NotFoundException(`User with id ${id} not found`);
     }
@@ -140,8 +116,19 @@ export class UsersService {
    */
   async update(id: number, dto: UpdateUserDto): Promise<UserEntity> {
     const user = await this.findOne(id);
-    Object.assign(user, dto);
+    if (dto.firstName !== undefined) user.firstName = dto.firstName;
+    if (dto.lastName !== undefined) user.lastName = dto.lastName;
+    if (dto.city !== undefined) user.city = dto.city ? dto.city.toUpperCase() : null;
+    if (dto.organizationName !== undefined) user.organizationName = dto.organizationName || null;
+    if (dto.academicProgram !== undefined) user.academicProgram = dto.academicProgram || null;
+    if (dto.interests !== undefined) user.interests = dto.interests;
     return this.usersDBService.repository.save(user);
+  }
+
+  async updateByClerkId(clerkId: string, dto: UpdateUserDto): Promise<UserEntity> {
+    const user = await this.findByClerkId(clerkId);
+    if (!user) throw new NotFoundException('User not found');
+    return this.update(user.id, dto);
   }
 
   /**

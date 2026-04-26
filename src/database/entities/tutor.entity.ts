@@ -11,6 +11,7 @@ import {
 import { UserEntity } from './user.entity';
 import { CertificacionEntity } from './certificacion.entity';
 import { TutorEstado } from '../../common/enums/tutor-estado.enum';
+import { TutorCourseEntity } from '../../modules/tutors/entities/tutor-course.entity';
 
 @Entity('tutors')
 export class TutorEntity {
@@ -27,6 +28,9 @@ export class TutorEntity {
   @Column({ type: 'varchar', length: 100 })
   apellido!: string;
 
+  @Column({ type: 'varchar', length: 20, nullable: true })
+  cedula?: string;
+
   @Column({ type: 'varchar', length: 500, nullable: true })
   descripcion?: string;
 
@@ -40,6 +44,9 @@ export class TutorEntity {
 
   @OneToMany(() => CertificacionEntity, (cert) => cert.tutor)
   certificaciones!: CertificacionEntity[];
+
+  @OneToMany(() => TutorCourseEntity, (course) => course.tutor)
+  courses!: TutorCourseEntity[];
 
   @Column({ type: 'text', nullable: true })
   bio?: string;

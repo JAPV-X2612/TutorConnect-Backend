@@ -1,6 +1,12 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Expose } from 'class-transformer';
-import { IsString, IsOptional, IsArray, IsInt, IsPositive } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsArray,
+  IsInt,
+  IsPositive,
+} from 'class-validator';
 
 export class CreateTutorDto {
   @ApiProperty({

@@ -16,7 +16,7 @@ async function bootstrap() {
   app.use('/uploads', express.static(uploadsDir));
 
   // Raw body for Clerk webhook signature verification (must come first)
-  app.use('/webhooks/clerk', express.raw({ type: 'application/json' }));
+  app.use('/api/webhooks/clerk', express.raw({ type: 'application/json' }));
 
   // Standard body parsers for all other routes
   app.use(express.json());
@@ -68,7 +68,11 @@ async function bootstrap() {
       callback(new Error(`CORS: origin ${origin} not allowed`));
     },
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'ngrok-skip-browser-warning'],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'ngrok-skip-browser-warning',
+    ],
     credentials: true,
   });
 

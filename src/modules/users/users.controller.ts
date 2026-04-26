@@ -49,15 +49,32 @@ export class UsersController {
    */
   @Get('me')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Get the profile of the currently authenticated user' })
+  @ApiOperation({
+    summary: 'Get the profile of the currently authenticated user',
+  })
   @ApiResponse({ status: 200, type: UserDto })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   async getMe(@Req() req: AuthenticatedRequest): Promise<UserDto> {
     const { clerk_id } = req.user;
     const user = await this.usersService.findByClerkId(clerk_id);
     if (!user) {
-      throw new NotFoundException('No platform profile found for this identity');
+      throw new NotFoundException(
+        'No platform profile found for this identity',
+      );
     }
+    return plainToInstance(UserDto, user, { excludeExtraneousValues: true });
+  }
+
+  @Patch('me')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Update the profile of the currently authenticated user' })
+  @ApiResponse({ status: 200, type: UserDto })
+  async updateMe(
+    @Req() req: AuthenticatedRequest,
+    @Body() dto: UpdateUserDto,
+  ): Promise<UserDto> {
+    const { clerk_id } = req.user;
+    const user = await this.usersService.updateByClerkId(clerk_id, dto);
     return plainToInstance(UserDto, user, { excludeExtraneousValues: true });
   }
 

@@ -148,7 +148,10 @@ export class CreateUserDto {
    * Subject areas in which the tutor offers services.
    * Required for TUTOR registrations — must contain at least one entry.
    */
-  @ApiPropertyOptional({ example: ['Calculus', 'Linear Algebra'], type: [String] })
+  @ApiPropertyOptional({
+    example: ['Calculus', 'Linear Algebra'],
+    type: [String],
+  })
   @IsOptional()
   @IsArray()
   @IsString({ each: true })

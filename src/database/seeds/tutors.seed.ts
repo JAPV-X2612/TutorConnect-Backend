@@ -103,7 +103,9 @@ async function seed(): Promise<void> {
   const tutorRepo = AppDataSource.getRepository(TutorEntity);
 
   for (const data of SEED_TUTORS) {
-    const existingUser = await userRepo.findOne({ where: { clerkId: data.clerkId } });
+    const existingUser = await userRepo.findOne({
+      where: { clerkId: data.clerkId },
+    });
 
     if (existingUser) {
       const existingTutor = await tutorRepo.findOne({

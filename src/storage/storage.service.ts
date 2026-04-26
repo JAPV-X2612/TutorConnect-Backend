@@ -6,7 +6,8 @@ const UPLOADS_DIR = join(process.cwd(), 'uploads');
 
 @Injectable()
 export class StorageService {
-  uploadFile(key: string, buffer: Buffer, _mimeType: string): void { // TODO: Fix error
+  uploadFile(key: string, buffer: Buffer, _mimeType: string): void {
+    // TODO: Fix error
     const filePath = join(UPLOADS_DIR, ...key.split('/'));
     const dir = dirname(filePath);
 
@@ -17,8 +18,10 @@ export class StorageService {
     writeFileSync(filePath, buffer);
   }
 
-  getPresignedUrl(key: string, _expiresIn?: number): string { // TODO: Fix error
-    const base = process.env.APP_URL || `http://localhost:${process.env.PORT || 3000}`;
+  getPresignedUrl(key: string, _expiresIn?: number): string {
+    // TODO: Fix error
+    const base =
+      process.env.APP_URL || `http://localhost:${process.env.PORT || 3000}`;
     return `${base}/uploads/${key}`;
   }
 }
