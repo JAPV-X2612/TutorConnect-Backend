@@ -10,13 +10,15 @@ import { Repository } from 'typeorm';
 import { createClerkClient } from '@clerk/backend';
 import { randomUUID } from 'crypto';
 import { TutorEntity } from '../../database/entities/tutor.entity';
-import { UserEntity } from '../../users/entities/user.entity';
 import { CertificacionEntity } from '../../database/entities/certificacion.entity';
 import { StorageService } from '../../storage/storage.service';
 import { CreateTutorDto } from './dtos/create-tutor.dto';
 import { UpdateTutorDto } from './dtos/update-tutor.dto';
 import { RegisterTutorDto } from './dtos/register-tutor.dto';
-import { TutorEstado } from '../../common/enums/tutor-estado.enum';
+import { EstadoTutor } from '../../common/enums/estado-tutor.enum';
+import { UserEntity } from '../users/entities/user.entity';
+import { UserRole } from '../../common/enums/user-role.enum';
+import { UserStatus } from '../../common/enums/user-status.enum';
 
 const ALLOWED_MIME_TYPES = ['application/pdf', 'image/jpeg', 'image/png'];
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
@@ -31,44 +33,70 @@ export class TutorsService {
   constructor(
     @InjectRepository(TutorEntity)
     private readonly tutorRepository: Repository<TutorEntity>,
-    @InjectRepository(UserEntity)
-    private readonly userRepository: Repository<UserEntity>,
     @InjectRepository(CertificacionEntity)
     private readonly certRepository: Repository<CertificacionEntity>,
+    @InjectRepository(UserEntity)
+    private readonly userRepository: Repository<UserEntity>,
     private readonly storageService: StorageService,
   ) {}
+
+  // ── GET /tutors/me ───────────────────────────────────────────────────────
+
+  async getMe(clerkId: string): Promise<{
+    exists: boolean;
+    id?: string;
+    hasCertificaciones?: boolean;
+  }> {
+    const tutor = await this.tutorRepository.findOne({
+      where: { clerkId },
+      relations: ['certificaciones'],
+    });
+
+    if (!tutor) return { exists: false };
+
+    return {
+      exists: true,
+      id: tutor.id,
+      hasCertificaciones: tutor.certificaciones.length > 0,
+    };
+  }
 
   // ── POST /tutors/register ─────────────────────────────────────────────────
 
   async register(
     clerkId: string,
     dto: RegisterTutorDto,
-  ): Promise<{
-    id: string;
-    nombre: string;
-    apellido: string;
-    estado: TutorEstado;
-  }> {
-    const user = await this.userRepository.findOne({ where: { clerkId } });
-    if (!user) throw new NotFoundException('Usuario no encontrado');
-
-    const existing = await this.tutorRepository.findOne({
-      where: { user: { id: user.id } },
-    });
+  ): Promise<{ id: string; nombre: string; apellido: string; estado: EstadoTutor }> {
+    const existing = await this.tutorRepository.findOne({ where: { clerkId } });
     if (existing) throw new ConflictException('El tutor ya está registrado');
 
     const tutor = this.tutorRepository.create({
-      user,
+      clerkId,
+      email: dto.email,
       nombre: dto.nombre,
       apellido: dto.apellido,
       descripcion: dto.descripcion,
-      estado: TutorEstado.PENDIENTE,
+      estado: EstadoTutor.PENDIENTE,
     });
 
     const saved = await this.tutorRepository.save(tutor);
 
+    // Upsert into unified user table so GET /users/me works for tutors.
+    const existingUser = await this.userRepository.findOne({ where: { clerkId } });
+    if (!existingUser) {
+      const userRow = this.userRepository.create({
+        clerkId,
+        email: dto.email,
+        firstName: dto.nombre,
+        lastName: dto.apellido,
+        role: UserRole.TUTOR,
+        status: UserStatus.ACTIVE,
+      });
+      await this.userRepository.save(userRow);
+    }
+
     await this.clerk.users.updateUserMetadata(clerkId, {
-      publicMetadata: { role: 'tutor' },
+      publicMetadata: { role: 'TUTOR' },
     });
 
     return {
@@ -93,11 +121,10 @@ export class TutorsService {
   }> {
     const tutor = await this.tutorRepository.findOne({
       where: { id: tutorId },
-      relations: ['user', 'certificaciones'],
+      relations: ['certificaciones'],
     });
     if (!tutor) throw new NotFoundException('Tutor no encontrado');
-    if (tutor.user.clerkId !== clerkId)
-      throw new ForbiddenException('Acceso denegado');
+    if (tutor.clerkId !== clerkId) throw new ForbiddenException('Acceso denegado');
 
     if (!ALLOWED_MIME_TYPES.includes(file.mimetype)) {
       throw new BadRequestException('Solo se permiten PDF, JPG y PNG');
@@ -113,22 +140,23 @@ export class TutorsService {
 
     const s3Key = `certificaciones/${tutorId}/${randomUUID()}-${file.originalname}`;
 
-    this.storageService.uploadFile(s3Key, file.buffer, file.mimetype);
+    await this.storageService.uploadFile(s3Key, file.buffer, file.mimetype);
+
+    const s3Url = await this.storageService.getPresignedUrl(s3Key, 900);
 
     const cert = this.certRepository.create({
       tutor,
       nombreArchivo: file.originalname,
       s3Key,
+      s3Url,
       mimeType: file.mimetype,
     });
     const saved = await this.certRepository.save(cert);
 
-    const s3_url = this.storageService.getPresignedUrl(s3Key, 900);
-
     return {
       id: saved.id,
       nombre_archivo: saved.nombreArchivo,
-      s3_url,
+      s3_url: saved.s3Url,
       mime_type: saved.mimeType,
     };
   }
@@ -159,7 +187,7 @@ export class TutorsService {
         id: cert.id,
         nombre_archivo: cert.nombreArchivo,
         mime_type: cert.mimeType,
-        url_presignada: this.storageService.getPresignedUrl(cert.s3Key, 900),
+        url_presignada: await this.storageService.getPresignedUrl(cert.s3Key, 900),
         created_at: cert.createdAt,
       })),
     );
@@ -168,14 +196,9 @@ export class TutorsService {
   // ── CRUD existente ────────────────────────────────────────────────────────
 
   async create(dto: CreateTutorDto): Promise<TutorEntity> {
-    const user = await this.userRepository.findOne({
-      where: { id: dto.userId },
-    });
-    if (!user)
-      throw new NotFoundException(`User with id ${dto.userId} not found`);
-
     const tutor = this.tutorRepository.create({
-      user,
+      clerkId: dto.clerkId,
+      email: dto.email,
       bio: dto.bio,
       subjects: dto.subjects,
       experienceYears: dto.experienceYears,
@@ -187,20 +210,16 @@ export class TutorsService {
 
   async findAll(subject?: string): Promise<TutorEntity[]> {
     if (!subject) {
-      return this.tutorRepository.find({ relations: ['user'] });
+      return this.tutorRepository.find();
     }
     return this.tutorRepository
       .createQueryBuilder('tutor')
-      .leftJoinAndSelect('tutor.user', 'user')
       .where('tutor.subjects LIKE :subject', { subject: `%${subject}%` })
       .getMany();
   }
 
   async findOne(id: string): Promise<TutorEntity> {
-    const tutor = await this.tutorRepository.findOne({
-      where: { id },
-      relations: ['user'],
-    });
+    const tutor = await this.tutorRepository.findOne({ where: { id } });
     if (!tutor) throw new NotFoundException(`Tutor with id ${id} not found`);
     return tutor;
   }

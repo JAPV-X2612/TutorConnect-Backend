@@ -1,51 +1,31 @@
-import {
-  Controller,
-  Get,
-  HttpCode,
-  HttpStatus,
-  Req,
-  UseGuards,
-} from '@nestjs/common';
-import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { plainToInstance } from 'class-transformer';
-import type { Request } from 'express';
+import { Controller, Post, Get, Req, UseGuards, HttpCode } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { ClerkJwtGuard } from './clerk-jwt.guard';
-import { UserDto } from '../users/dtos/user.dto';
-import { UserRole } from '../../common/enums/user-role.enum';
 
-/** Typed shape of the authenticated user attached by {@link ClerkJwtGuard}. */
-interface AuthenticatedRequest extends Request {
-  user: { clerk_id: string; role: UserRole };
-}
-
-/**
- * REST controller for authentication endpoints (MOD-AUT-001).
- *
- * @author TutorConnect Team
- */
 @ApiTags('auth')
+@ApiBearerAuth()
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  /**
-   * Returns the serialized platform profile of the currently authenticated user.
-   *
-   * Sensitive internal fields (password, deletedAt) are excluded via
-   * {@link UserDto} serialization.
-   *
-   * @param req - Express request enriched by {@link ClerkJwtGuard}.
-   * @returns Serialized {@link UserDto}.
-   */
-  @Get('me')
-  @HttpCode(HttpStatus.OK)
+  @Post('logout')
   @UseGuards(ClerkJwtGuard)
-  @ApiOperation({ summary: 'Get the profile of the authenticated user' })
-  @ApiResponse({ status: 200, type: UserDto })
-  @ApiResponse({ status: 401, description: 'Invalid or missing JWT.' })
-  async getMe(@Req() req: AuthenticatedRequest): Promise<UserDto> {
-    const entity = await this.authService.getProfile(req.user.clerk_id);
-    return plainToInstance(UserDto, entity, { excludeExtraneousValues: true });
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Cerrar sesión activa del usuario' })
+  @ApiResponse({ status: 200, description: 'Sesión cerrada correctamente' })
+  @ApiResponse({ status: 401, description: 'Token requerido o inválido' })
+  @ApiResponse({ status: 500, description: 'Error al cerrar sesión' })
+  async logout(@Req() req: any): Promise<{ message: string }> {
+    return this.authService.logout(req.user.sessionId);
+  }
+
+  @Get('me')
+  @UseGuards(ClerkJwtGuard)
+  @ApiOperation({ summary: 'Verificar sesión activa del usuario' })
+  @ApiResponse({ status: 200, description: 'Estado de sesión activa' })
+  @ApiResponse({ status: 401, description: 'Token requerido o expirado' })
+  getMe(@Req() req: any): { clerk_id: string; role: string; session_activa: boolean } {
+    return this.authService.getMe(req.user);
   }
 }

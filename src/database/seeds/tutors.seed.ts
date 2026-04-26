@@ -6,7 +6,6 @@ import { UserEntity } from '../../users/entities/user.entity';
 import { TutorEntity } from '../entities/tutor.entity';
 import { CertificacionEntity } from '../entities/certificacion.entity';
 import { BookingEntity } from '../entities/booking.entity';
-import { UserRole } from '../../common/enums/user-role.enum';
 import { TutorEstado } from '../../common/enums/tutor-estado.enum';
 
 function loadEnvFile(filePath: string): void {
@@ -99,39 +98,25 @@ async function seed(): Promise<void> {
   await AppDataSource.initialize();
   console.log('Connected to database.');
 
-  const userRepo = AppDataSource.getRepository(UserEntity);
   const tutorRepo = AppDataSource.getRepository(TutorEntity);
 
   for (const data of SEED_TUTORS) {
-    const existingUser = await userRepo.findOne({ where: { clerkId: data.clerkId } });
+    const existingTutor = await tutorRepo.findOne({
+      where: { clerkId: data.clerkId },
+    });
 
-    if (existingUser) {
-      const existingTutor = await tutorRepo.findOne({
-        where: { user: { id: existingUser.id } },
-        relations: ['user'],
-      });
-
-      if (existingTutor) {
-        existingTutor.precioHora = data.precioHora;
-        existingTutor.disponible = data.disponible;
-        existingTutor.estado = TutorEstado.VERIFICADO;
-        await tutorRepo.save(existingTutor);
-        console.log(`Updated tutor: ${data.nombre} ${data.apellido}`);
-      }
+    if (existingTutor) {
+      existingTutor.precioHora = data.precioHora;
+      existingTutor.disponible = data.disponible;
+      existingTutor.estado = TutorEstado.VERIFICADO;
+      await tutorRepo.save(existingTutor);
+      console.log(`Updated tutor: ${data.nombre} ${data.apellido}`);
       continue;
     }
 
-    const user = userRepo.create({
+    const tutor = tutorRepo.create({
       clerkId: data.clerkId,
       email: data.email,
-      firstName: data.nombre,
-      lastName: data.apellido,
-      role: UserRole.TUTOR,
-    });
-    const savedUser = await userRepo.save(user);
-
-    const tutor = tutorRepo.create({
-      user: savedUser,
       nombre: data.nombre,
       apellido: data.apellido,
       bio: data.bio,
