@@ -58,7 +58,10 @@ export class UsersController {
     if (!user) {
       throw new NotFoundException('No platform profile found for this identity');
     }
-    return plainToInstance(UserDto, user, { excludeExtraneousValues: true });
+    // Spread the TypeORM entity into a plain object. class-transformer with
+    // `excludeExtraneousValues: true` requires a plain-object source to map
+    // properties by name; passing the entity instance directly returns `{}`.
+    return plainToInstance(UserDto, { ...user }, { excludeExtraneousValues: true });
   }
 
   /**
@@ -77,7 +80,7 @@ export class UsersController {
   @ApiResponse({ status: 409, description: 'User already exists.' })
   async create(@Body() dto: CreateUserDto): Promise<UserDto> {
     const user = await this.usersService.create(dto);
-    return plainToInstance(UserDto, user, { excludeExtraneousValues: true });
+    return plainToInstance(UserDto, { ...user }, { excludeExtraneousValues: true });
   }
 
   /**
@@ -91,7 +94,7 @@ export class UsersController {
   async findAll(): Promise<UserDto[]> {
     const users = await this.usersService.findAll();
     return users.map((u) =>
-      plainToInstance(UserDto, u, { excludeExtraneousValues: true }),
+      plainToInstance(UserDto, { ...u }, { excludeExtraneousValues: true }),
     );
   }
 
@@ -107,7 +110,7 @@ export class UsersController {
   @ApiResponse({ status: 404, description: 'User not found.' })
   async findOne(@Param('id', ParseIntPipe) id: number): Promise<UserDto> {
     const user = await this.usersService.findOne(id);
-    return plainToInstance(UserDto, user, { excludeExtraneousValues: true });
+    return plainToInstance(UserDto, { ...user }, { excludeExtraneousValues: true });
   }
 
   /**
@@ -126,7 +129,7 @@ export class UsersController {
     @Body() dto: UpdateUserDto,
   ): Promise<UserDto> {
     const user = await this.usersService.update(id, dto);
-    return plainToInstance(UserDto, user, { excludeExtraneousValues: true });
+    return plainToInstance(UserDto, { ...user }, { excludeExtraneousValues: true });
   }
 
   /**

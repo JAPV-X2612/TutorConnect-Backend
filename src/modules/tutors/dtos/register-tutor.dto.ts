@@ -1,6 +1,10 @@
-import { IsString, IsNotEmpty, IsOptional, MaxLength } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsEmail, MaxLength } from 'class-validator';
 
 export class RegisterTutorDto {
+  @IsEmail()
+  @IsNotEmpty()
+  email: string;
+
   @IsString()
   @IsNotEmpty({ message: 'nombre y apellido son requeridos' })
   nombre: string;
