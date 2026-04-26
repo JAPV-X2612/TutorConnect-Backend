@@ -28,7 +28,8 @@ export class BookingsService {
     const tutor = await this.tutorRepository.findOne({
       where: { id: dto.tutorId },
     });
-    if (!tutor) throw new NotFoundException(`Tutor with id ${dto.tutorId} not found`);
+    if (!tutor)
+      throw new NotFoundException(`Tutor with id ${dto.tutorId} not found`);
 
     const booking = this.bookingRepository.create({
       student,
@@ -52,7 +53,8 @@ export class BookingsService {
       where: { id },
       relations: ['student', 'tutor'],
     });
-    if (!booking) throw new NotFoundException(`Booking with id ${id} not found`);
+    if (!booking)
+      throw new NotFoundException(`Booking with id ${id} not found`);
     return booking;
   }
 

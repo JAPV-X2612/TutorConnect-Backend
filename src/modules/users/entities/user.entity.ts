@@ -107,20 +107,35 @@ export class UserEntity {
   /**
    * Country of the user. Defaults to 'Colombia'.
    */
-  @Column({ name: 'country', type: 'varchar', length: 100, default: 'Colombia' })
+  @Column({
+    name: 'country',
+    type: 'varchar',
+    length: 100,
+    default: 'Colombia',
+  })
   country?: string;
 
   /**
    * Name of the university or company the user belongs to.
    * Stored in uppercase for consistent institutional search matching.
    */
-  @Column({ name: 'organization_name', type: 'varchar', length: 255, nullable: true })
+  @Column({
+    name: 'organization_name',
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+  })
   organizationName?: string | null;
 
   /**
    * Academic program or field of study.
    */
-  @Column({ name: 'academic_program', type: 'varchar', length: 255, nullable: true })
+  @Column({
+    name: 'academic_program',
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+  })
   academicProgram?: string | null;
 
   // ── Learner-specific fields ──────────────────────────────────────────────────

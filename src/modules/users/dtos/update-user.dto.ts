@@ -1,67 +1,44 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { Expose } from 'class-transformer';
-import {
-  IsOptional,
-  IsString,
-  IsEmail,
-  IsEnum,
-  MaxLength,
-} from 'class-validator';
-import { UserRole } from '../../../common/enums/user-role.enum';
-import { UserStatus } from '../../../common/enums/user-status.enum';
+import { IsOptional, IsString, IsArray, MaxLength } from 'class-validator';
 
 /**
- * Data transfer object for partially updating an existing user profile.
- *
- * All fields are optional; only the provided fields are updated.
- *
- * @author TutorConnect Team
+ * Data transfer object for partially updating a user's own profile.
+ * Only the fields a user may self-update are exposed here.
  */
 export class UpdateUserDto {
-  /**
-   * Updated given name.
-   */
-  @ApiPropertyOptional({ example: 'María' })
+  @ApiPropertyOptional()
   @IsOptional()
   @IsString()
   @MaxLength(100)
-  @Expose()
   firstName?: string;
 
-  /**
-   * Updated family name.
-   */
-  @ApiPropertyOptional({ example: 'López' })
+  @ApiPropertyOptional()
   @IsOptional()
   @IsString()
   @MaxLength(100)
-  @Expose()
   lastName?: string;
 
-  /**
-   * Updated primary email address.
-   */
-  @ApiPropertyOptional({ example: 'maria@example.com' })
+  @ApiPropertyOptional()
   @IsOptional()
-  @IsEmail()
-  @Expose()
-  email?: string;
+  @IsString()
+  @MaxLength(150)
+  city?: string;
 
-  /**
-   * Updated platform role.
-   */
-  @ApiPropertyOptional({ example: UserRole.TUTOR, enum: UserRole })
+  @ApiPropertyOptional()
   @IsOptional()
-  @IsEnum(UserRole)
-  @Expose()
-  role?: UserRole;
+  @IsString()
+  @MaxLength(255)
+  organizationName?: string;
 
-  /**
-   * Updated account status.
-   */
-  @ApiPropertyOptional({ example: UserStatus.ACTIVE, enum: UserStatus })
+  @ApiPropertyOptional()
   @IsOptional()
-  @IsEnum(UserStatus)
-  @Expose()
-  status?: UserStatus;
+  @IsString()
+  @MaxLength(255)
+  academicProgram?: string;
+
+  @ApiPropertyOptional({ type: [String] })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  interests?: string[];
 }

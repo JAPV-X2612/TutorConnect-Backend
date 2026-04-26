@@ -1,5 +1,6 @@
 import {
   Injectable,
+  Logger,
   NotFoundException,
   ConflictException,
   ForbiddenException,
@@ -12,11 +13,14 @@ import { randomUUID } from 'crypto';
 import { TutorEntity } from '../../database/entities/tutor.entity';
 import { UserEntity } from '../../users/entities/user.entity';
 import { CertificacionEntity } from '../../database/entities/certificacion.entity';
+import { TutorCourseEntity } from './entities/tutor-course.entity';
 import { StorageService } from '../../storage/storage.service';
 import { CreateTutorDto } from './dtos/create-tutor.dto';
 import { UpdateTutorDto } from './dtos/update-tutor.dto';
 import { RegisterTutorDto } from './dtos/register-tutor.dto';
+import { CreateCourseDto } from './dtos/create-course.dto';
 import { TutorEstado } from '../../common/enums/tutor-estado.enum';
+import { UserRole } from '../../common/enums/user-role.enum';
 
 const ALLOWED_MIME_TYPES = ['application/pdf', 'image/jpeg', 'image/png'];
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
@@ -24,6 +28,7 @@ const MAX_CERTIFICACIONES = 10;
 
 @Injectable()
 export class TutorsService {
+  private readonly logger = new Logger(TutorsService.name);
   private readonly clerk = createClerkClient({
     secretKey: process.env.CLERK_SECRET_KEY,
   });
@@ -35,6 +40,8 @@ export class TutorsService {
     private readonly userRepository: Repository<UserEntity>,
     @InjectRepository(CertificacionEntity)
     private readonly certRepository: Repository<CertificacionEntity>,
+    @InjectRepository(TutorCourseEntity)
+    private readonly courseRepository: Repository<TutorCourseEntity>,
     private readonly storageService: StorageService,
   ) {}
 
@@ -49,19 +56,82 @@ export class TutorsService {
     apellido: string;
     estado: TutorEstado;
   }> {
-    const user = await this.userRepository.findOne({ where: { clerkId } });
-    if (!user) throw new NotFoundException('Usuario no encontrado');
+    this.logger.log(`[register] Request received for clerk_id=${clerkId}`);
+    let user = await this.userRepository.findOne({ where: { clerkId } });
+
+    if (!user) {
+      // Webhook has not arrived yet — provision the UserEntity directly from Clerk.
+      try {
+        const clerkUser = await this.clerk.users.getUser(clerkId);
+        const primaryEmail =
+          clerkUser.emailAddresses?.find(
+            (e) => e.id === clerkUser.primaryEmailAddressId,
+          )?.emailAddress ??
+          clerkUser.emailAddresses?.[0]?.emailAddress ??
+          '';
+
+        // The same email may already exist with a previous clerkId (e.g. the user
+        // deleted their Clerk account and re-registered). Re-link instead of inserting.
+        const byEmail = primaryEmail
+          ? await this.userRepository.findOne({ where: { email: primaryEmail } })
+          : null;
+
+        if (byEmail) {
+          this.logger.log(
+            `[register] Re-linking email=${primaryEmail} from clerk_id=${byEmail.clerkId} → ${clerkId}`,
+          );
+          byEmail.clerkId = clerkId;
+          byEmail.firstName = dto.nombre || byEmail.firstName;
+          byEmail.lastName = dto.apellido || byEmail.lastName;
+          byEmail.role = UserRole.TUTOR;
+          user = await this.userRepository.save(byEmail);
+        } else {
+          user = this.userRepository.create({
+            clerkId,
+            email: primaryEmail,
+            firstName: dto.nombre,
+            lastName: dto.apellido,
+            role: UserRole.TUTOR,
+          });
+          await this.userRepository.save(user);
+        }
+      } catch (err) {
+        this.logger.error(
+          `[register] Failed to provision user for clerk_id=${clerkId}: ${(err as Error).message}`,
+        );
+        throw new ForbiddenException(
+          'No se pudo verificar el usuario en Clerk',
+        );
+      }
+    } else if (user.role !== UserRole.TUTOR) {
+      // Webhook arrived first and defaulted the role to LEARNER — correct it.
+      this.logger.log(
+        `[register] Correcting role LEARNER → TUTOR for clerk_id=${clerkId} (webhook race condition)`,
+      );
+      user.role = UserRole.TUTOR;
+      await this.userRepository.save(user);
+    }
 
     const existing = await this.tutorRepository.findOne({
       where: { user: { id: user.id } },
     });
     if (existing) throw new ConflictException('El tutor ya está registrado');
 
+    // Save city on the associated UserEntity if provided.
+    if (dto.ciudad && user.city !== dto.ciudad) {
+      user.city = dto.ciudad.toUpperCase();
+      await this.userRepository.save(user);
+    }
+
     const tutor = this.tutorRepository.create({
       user,
       nombre: dto.nombre,
       apellido: dto.apellido,
+      cedula: dto.cedula,
       descripcion: dto.descripcion,
+      subjects: dto.especialidades ?? [],
+      precioHora: dto.tarifa_hora ?? 0,
+      experienceYears: dto.experiencia_years,
       estado: TutorEstado.PENDIENTE,
     });
 
@@ -205,15 +275,91 @@ export class TutorsService {
     return tutor;
   }
 
+  async findByClerkId(clerkId: string): Promise<TutorEntity> {
+    const user = await this.userRepository.findOne({ where: { clerkId } });
+    if (!user) throw new NotFoundException('User not found');
+    const tutor = await this.tutorRepository.findOne({
+      where: { user: { id: user.id } },
+      relations: ['user', 'certificaciones'],
+    });
+    if (!tutor) throw new NotFoundException('Tutor profile not found');
+    return tutor;
+  }
+
   async update(id: string, dto: UpdateTutorDto): Promise<TutorEntity> {
     const tutor = await this.findOne(id);
-    Object.assign(tutor, dto as any);
-    const saved = await this.tutorRepository.save(tutor as any); // TODO: Fix warning
-    return Array.isArray(saved) ? saved[0] : saved; // TODO: Fix warning
+
+    // Fields that live on TutorEntity
+    if (dto.nombre !== undefined) tutor.nombre = dto.nombre;
+    if (dto.apellido !== undefined) tutor.apellido = dto.apellido;
+    if (dto.cedula !== undefined) tutor.cedula = dto.cedula;
+    if (dto.descripcion !== undefined) tutor.descripcion = dto.descripcion;
+    if (dto.bio !== undefined) tutor.bio = dto.bio;
+    if (dto.subjects !== undefined) tutor.subjects = dto.subjects;
+    if (dto.precioHora !== undefined) tutor.precioHora = dto.precioHora;
+    if (dto.experienceYears !== undefined) tutor.experienceYears = dto.experienceYears;
+
+    // City lives on UserEntity
+    if (dto.ciudad !== undefined && tutor.user) {
+      tutor.user.city = dto.ciudad.toUpperCase();
+      await this.userRepository.save(tutor.user);
+    }
+
+    return this.tutorRepository.save(tutor);
   }
 
   async remove(id: string): Promise<void> {
     const tutor = await this.findOne(id);
     await this.tutorRepository.remove(tutor);
+  }
+
+  // ── Course management ─────────────────────────────────────────────────────
+
+  async createCourse(clerkId: string, dto: CreateCourseDto): Promise<TutorCourseEntity> {
+    const tutor = await this.findByClerkId(clerkId);
+    const course = this.courseRepository.create({
+      tutor,
+      subject: dto.subject,
+      description: dto.description,
+      price: dto.price,
+      duration: dto.duration ?? 60,
+      modalidad: dto.modalidad,
+      academicLevel: dto.academicLevel,
+      isActive: true,
+    });
+    const saved = await this.courseRepository.save(course);
+    this.logger.log(`[courses] Created course "${dto.subject}" for tutor ${tutor.id}`);
+    return saved;
+  }
+
+  async getCourses(clerkId: string): Promise<TutorCourseEntity[]> {
+    const tutor = await this.findByClerkId(clerkId);
+    return this.courseRepository.find({
+      where: { tutor: { id: tutor.id } },
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  async updateCourse(
+    courseId: string,
+    clerkId: string,
+    partial: Partial<CreateCourseDto> & { isActive?: boolean },
+  ): Promise<TutorCourseEntity> {
+    const tutor = await this.findByClerkId(clerkId);
+    const course = await this.courseRepository.findOne({
+      where: { id: courseId, tutor: { id: tutor.id } },
+    });
+    if (!course) throw new NotFoundException('Curso no encontrado');
+    Object.assign(course, partial);
+    return this.courseRepository.save(course);
+  }
+
+  async deleteCourse(courseId: string, clerkId: string): Promise<void> {
+    const tutor = await this.findByClerkId(clerkId);
+    const course = await this.courseRepository.findOne({
+      where: { id: courseId, tutor: { id: tutor.id } },
+    });
+    if (!course) throw new NotFoundException('Curso no encontrado');
+    await this.courseRepository.remove(course);
   }
 }

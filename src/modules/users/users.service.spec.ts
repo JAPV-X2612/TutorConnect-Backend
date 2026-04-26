@@ -1,5 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
 import { UsersService } from './users.service';
 import { UsersDBService } from '../../database/dbservices/users.dbservice';
 import { UserEntity } from './entities/user.entity';
@@ -82,7 +86,9 @@ describe('UsersService', () => {
     });
 
     it('throws ConflictException on duplicate constraint (pg code 23505)', async () => {
-      mockUsersDBService.createWithTransaction.mockRejectedValue({ code: '23505' });
+      mockUsersDBService.createWithTransaction.mockRejectedValue({
+        code: '23505',
+      });
 
       const dto: CreateUserDto = {
         clerkId: 'user_dup',
@@ -324,21 +330,29 @@ describe('UsersService', () => {
       original.updatedAt = originalTimestamp;
 
       const updatedTimestamp = new Date('2024-06-01T12:00:00Z');
-      const updatedUser: UserEntity = { ...original, firstName: 'Modified', updatedAt: updatedTimestamp };
+      const updatedUser: UserEntity = {
+        ...original,
+        firstName: 'Modified',
+        updatedAt: updatedTimestamp,
+      };
 
       mockRepo.findOne.mockResolvedValue(original);
       mockRepo.save.mockResolvedValue(updatedUser);
 
       const result = await service.update(1, { firstName: 'Modified' });
 
-      expect(result.updatedAt.getTime()).toBeGreaterThan(originalTimestamp.getTime());
+      expect(result.updatedAt.getTime()).toBeGreaterThan(
+        originalTimestamp.getTime(),
+      );
       expect(result.firstName).toBe('Modified');
     });
   });
 
   describe('constraint test — clerk_id remains the unique identifier', () => {
     it('throws ConflictException when creating a second user with the same clerk_id', async () => {
-      mockUsersDBService.createWithTransaction.mockRejectedValue({ code: '23505' });
+      mockUsersDBService.createWithTransaction.mockRejectedValue({
+        code: '23505',
+      });
 
       const dto: CreateUserDto = {
         clerkId: 'user_abc123',

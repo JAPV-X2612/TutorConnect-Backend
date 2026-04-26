@@ -52,7 +52,12 @@ export class PaymentEntity {
    * Absolute commission amount retained by TutorConnect.
    * Derived as {@code amount × commission_rate} and stored for audit purposes.
    */
-  @Column({ name: 'commission_amount', type: 'numeric', precision: 12, scale: 2 })
+  @Column({
+    name: 'commission_amount',
+    type: 'numeric',
+    precision: 12,
+    scale: 2,
+  })
   commissionAmount: number;
 
   /**

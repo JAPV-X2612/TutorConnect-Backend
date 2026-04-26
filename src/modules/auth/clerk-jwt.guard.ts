@@ -38,7 +38,9 @@ export class ClerkJwtGuard implements CanActivate {
     const authHeader = request.headers['authorization'];
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      throw new UnauthorizedException('Authorization header with Bearer token is required');
+      throw new UnauthorizedException(
+        'Authorization header with Bearer token is required',
+      );
     }
 
     const token = authHeader.slice(7);
@@ -64,7 +66,9 @@ export class ClerkJwtGuard implements CanActivate {
       ) {
         throw new UnauthorizedException('Token has expired');
       }
-      throw new UnauthorizedException('Token is invalid or could not be verified');
+      throw new UnauthorizedException(
+        'Token is invalid or could not be verified',
+      );
     }
   }
 }
