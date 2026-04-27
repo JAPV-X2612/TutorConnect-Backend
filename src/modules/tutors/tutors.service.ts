@@ -142,21 +142,23 @@ export class TutorsService {
 
     await this.storageService.uploadFile(s3Key, file.buffer, file.mimetype);
 
-    const s3Url = await this.storageService.getPresignedUrl(s3Key, 900);
-
+    // Store only the s3Key — pre-signed URLs expire and must not be persisted
     const cert = this.certRepository.create({
       tutor,
       nombreArchivo: file.originalname,
       s3Key,
-      s3Url,
+      s3Url: null,
       mimeType: file.mimetype,
     });
     const saved = await this.certRepository.save(cert);
 
+    // Generate a fresh pre-signed URL only for this response (valid 15 min)
+    const s3Url = await this.storageService.getPresignedUrl(s3Key, 900);
+
     return {
       id: saved.id,
       nombre_archivo: saved.nombreArchivo,
-      s3_url: saved.s3Url,
+      s3_url: s3Url,
       mime_type: saved.mimeType,
     };
   }
