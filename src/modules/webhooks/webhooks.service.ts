@@ -53,19 +53,15 @@ export class WebhooksService {
     private readonly userRepository: Repository<UserEntity>,
   ) {}
 
-  /**
-   * Verifies the Svix signature and dispatches the event to the appropriate handler.
-   *
-   * @param payload - Raw request body bytes (must be unparsed).
-   * @param headers - Svix verification headers from the incoming request.
-   * @returns `{ received: true }` on success.
-   * @throws {UnauthorizedException} When the Svix signature is invalid.
-   */
   async handleClerkWebhook(
     payload: Buffer,
     headers: SvixHeaders,
   ): Promise<{ received: true }> {
-    const secret = process.env.CLERK_WEBHOOK_SECRET as string;
+    const secret = process.env.CLERK_WEBHOOK_SECRET;
+    if (!secret) {
+      throw new UnauthorizedException('Webhook secret no configurado');
+    }
+
     const wh = new Webhook(secret);
 
     let event: ClerkWebhookEvent;
@@ -89,13 +85,6 @@ export class WebhooksService {
     return { received: true };
   }
 
-  /**
-   * Creates a local user profile from the Clerk `user.created` event payload.
-   *
-   * Skips creation if a profile for the given Clerk id already exists (idempotent).
-   *
-   * @param data - Raw Clerk user object from the webhook event.
-   */
   private async createUserFromClerk(data: ClerkUserCreatedData): Promise<void> {
     const clerkId = data.id;
 
@@ -125,12 +114,10 @@ export class WebhooksService {
         `unsafe_metadata.role="${data.unsafe_metadata?.role ?? '(none)'}" | ` +
         `resolved_role=${role}` +
         (role === UserRole.LEARNER && !data.unsafe_metadata?.role
-          ? ' ⚠ no role in metadata — will be corrected by POST /tutors/register or user.updated if this is a tutor'
+          ? ' ⚠ no role in metadata — will be corrected by POST /tutors/register if this is a tutor'
           : ''),
     );
 
-    // If a record with the same email already exists (e.g. created by a prior
-    // registration attempt), update its clerkId instead of inserting a duplicate.
     if (primaryEmail) {
       const byEmail = await this.userRepository.findOne({
         where: { email: primaryEmail },
@@ -162,16 +149,6 @@ export class WebhooksService {
     );
   }
 
-  /**
-   * Handles `user.updated` events.
-   *
-   * When the frontend sets `unsafeMetadata.role = "TUTOR"` during the OAuth
-   * sign-up flow, Clerk fires this event. We use it to correct the role that
-   * `user.created` may have defaulted to LEARNER due to the race condition
-   * between the webhook delivery and the frontend metadata update.
-   *
-   * @param data - Raw Clerk user object from the webhook event.
-   */
   private async syncRoleFromMetadata(data: ClerkUserCreatedData): Promise<void> {
     const rawRole = data.unsafe_metadata?.role?.toUpperCase();
 
