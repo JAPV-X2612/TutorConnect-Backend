@@ -8,7 +8,6 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { createClerkClient } from '@clerk/backend';
 import { randomUUID } from 'crypto';
 import { TutorEntity } from '../../database/entities/tutor.entity';
 import { CertificacionEntity } from '../../database/entities/certificacion.entity';
@@ -30,9 +29,6 @@ const MAX_CERTIFICACIONES = 10;
 @Injectable()
 export class TutorsService {
   private readonly logger = new Logger(TutorsService.name);
-  private readonly clerk = createClerkClient({
-    secretKey: process.env.CLERK_SECRET_KEY,
-  });
 
   constructor(
     @InjectRepository(TutorEntity)
@@ -51,7 +47,19 @@ export class TutorsService {
   async getMe(clerkId: string): Promise<{
     exists: boolean;
     id?: string;
+    nombre?: string;
+    apellido?: string;
+    cedula?: string;
+    descripcion?: string;
+    bio?: string;
+    subjects?: string[];
+    precioHora?: number;
+    experienceYears?: number;
+    estado?: string;
+    disponible?: boolean;
+    rating?: number;
     hasCertificaciones?: boolean;
+    user?: { email?: string; city?: string; country?: string };
   }> {
     const tutor = await this.tutorRepository.findOne({
       where: { clerkId },
@@ -60,10 +68,26 @@ export class TutorsService {
 
     if (!tutor) return { exists: false };
 
+    const userRow = await this.userRepository.findOne({ where: { clerkId } });
+
     return {
       exists: true,
       id: tutor.id,
+      nombre: tutor.nombre,
+      apellido: tutor.apellido,
+      cedula: tutor.cedula,
+      descripcion: tutor.descripcion,
+      bio: tutor.bio,
+      subjects: tutor.subjects,
+      precioHora: tutor.precioHora,
+      experienceYears: tutor.experienceYears,
+      estado: tutor.estado,
+      disponible: tutor.disponible,
+      rating: tutor.rating,
       hasCertificaciones: tutor.certificaciones.length > 0,
+      user: userRow
+        ? { email: userRow.email, city: userRow.city ?? undefined, country: userRow.country }
+        : undefined,
     };
   }
 
@@ -134,10 +158,6 @@ export class TutorsService {
       if (dto.ciudad) existingUser.city = dto.ciudad.toUpperCase();
       await this.userRepository.save(existingUser);
     }
-
-    await this.clerk.users.updateUserMetadata(clerkId, {
-      publicMetadata: { role: 'TUTOR' },
-    });
 
     return {
       id: saved.id,
@@ -359,5 +379,83 @@ export class TutorsService {
     });
     if (!course) throw new NotFoundException('Curso no encontrado');
     await this.courseRepository.remove(course);
+  }
+
+  // ── Public marketplace ────────────────────────────────────────────────────
+
+  async getCourseListings(subject?: string): Promise<object[]> {
+    const qb = this.courseRepository
+      .createQueryBuilder('course')
+      .leftJoinAndSelect('course.tutor', 'tutor')
+      .where('course.isActive = true');
+
+    if (subject) {
+      qb.andWhere('LOWER(course.subject) LIKE LOWER(:subject)', {
+        subject: `%${subject}%`,
+      });
+    }
+
+    const courses = await qb.orderBy('course.created_at', 'DESC').getMany();
+
+    return courses.map((c) => ({
+      id: c.id,
+      subject: c.subject,
+      description: c.description,
+      price: c.price,
+      duration: c.duration,
+      modalidad: c.modalidad,
+      academicLevel: c.academicLevel,
+      schedule: c.schedule ?? [],
+      tutor: {
+        id: c.tutor?.id,
+        nombre: c.tutor?.nombre,
+        apellido: c.tutor?.apellido,
+        bio: c.tutor?.bio ?? c.tutor?.descripcion,
+        rating: c.tutor?.rating,
+        disponible: c.tutor?.disponible,
+      },
+    }));
+  }
+
+  async getCourseDetail(courseId: string): Promise<object> {
+    const course = await this.courseRepository.findOne({
+      where: { id: courseId, isActive: true },
+      relations: ['tutor', 'tutor.certificaciones'],
+    });
+    if (!course) throw new NotFoundException('Curso no encontrado');
+
+    const userRow = course.tutor?.clerkId
+      ? await this.userRepository.findOne({ where: { clerkId: course.tutor.clerkId } })
+      : null;
+
+    return {
+      id: course.id,
+      subject: course.subject,
+      description: course.description,
+      price: course.price,
+      duration: course.duration,
+      modalidad: course.modalidad,
+      academicLevel: course.academicLevel,
+      schedule: course.schedule ?? [],
+      tutor: {
+        id: course.tutor?.id,
+        nombre: course.tutor?.nombre,
+        apellido: course.tutor?.apellido,
+        bio: course.tutor?.bio ?? course.tutor?.descripcion,
+        rating: course.tutor?.rating,
+        experienceYears: course.tutor?.experienceYears,
+        disponible: course.tutor?.disponible,
+        subjects: course.tutor?.subjects,
+        email: userRow?.email,
+        city: userRow?.city
+          ? userRow.city.charAt(0) + userRow.city.slice(1).toLowerCase()
+          : undefined,
+        certificaciones: (course.tutor?.certificaciones ?? []).map((cert) => ({
+          id: cert.id,
+          nombreArchivo: cert.nombreArchivo,
+          mimeType: cert.mimeType,
+        })),
+      },
+    };
   }
 }

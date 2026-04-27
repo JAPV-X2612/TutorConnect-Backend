@@ -8,6 +8,12 @@ import {
 } from 'typeorm';
 import { TutorEntity } from '../../../database/entities/tutor.entity';
 
+export interface ScheduleSlot {
+  day: 'MONDAY' | 'TUESDAY' | 'WEDNESDAY' | 'THURSDAY' | 'FRIDAY' | 'SATURDAY' | 'SUNDAY';
+  startTime: string; // HH:MM
+  endTime: string;   // HH:MM
+}
+
 @Entity('tutor_courses')
 export class TutorCourseEntity {
   @PrimaryGeneratedColumn('uuid')
@@ -33,6 +39,9 @@ export class TutorCourseEntity {
 
   @Column({ type: 'varchar', length: 100, nullable: true })
   academicLevel?: string;
+
+  @Column({ type: 'jsonb', nullable: true, default: [] })
+  schedule: ScheduleSlot[];
 
   @Column({ type: 'boolean', default: true })
   isActive: boolean;

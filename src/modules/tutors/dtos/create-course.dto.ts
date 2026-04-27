@@ -1,4 +1,24 @@
-import { IsString, IsNotEmpty, IsOptional, IsNumber, Min, IsIn, MaxLength } from 'class-validator';
+import {
+  IsString, IsNotEmpty, IsOptional, IsNumber, Min, IsIn, MaxLength,
+  IsArray, ValidateNested,
+} from 'class-validator';
+import { Type } from 'class-transformer';
+
+const DAYS = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'] as const;
+
+export class ScheduleSlotDto {
+  @IsString()
+  @IsIn(DAYS)
+  day: typeof DAYS[number];
+
+  @IsString()
+  @IsNotEmpty()
+  startTime: string;
+
+  @IsString()
+  @IsNotEmpty()
+  endTime: string;
+}
 
 export class CreateCourseDto {
   @IsString()
@@ -29,4 +49,10 @@ export class CreateCourseDto {
   @IsString()
   @MaxLength(100)
   academicLevel?: string;
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ScheduleSlotDto)
+  schedule?: ScheduleSlotDto[];
 }

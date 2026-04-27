@@ -68,7 +68,9 @@ export class TutorsController {
   async updateMe(@Body() dto: UpdateTutorDto, @Req() req: Request) {
     const { clerk_id } = (req as any).user;
     const tutor = await this.tutorsService.findByClerkId(clerk_id);
-    return this.tutorsService.update(tutor.id, dto);
+    await this.tutorsService.update(tutor.id, dto);
+    // Return the full profile so the frontend state stays in sync.
+    return this.tutorsService.getMe(clerk_id);
   }
 
   // ── Course CRUD ──────────────────────────────────────────────────────────
@@ -153,6 +155,20 @@ export class TutorsController {
   @UseGuards(ClerkJwtGuard)
   async getCertificaciones(@Param('id') id: string) {
     return this.tutorsService.getCertificaciones(id);
+  }
+
+  // ── Public marketplace ────────────────────────────────────────────────────
+
+  @Get('courses')
+  @HttpCode(HttpStatus.OK)
+  async getCourseListings(@Query('subject') subject?: string) {
+    return this.tutorsService.getCourseListings(subject);
+  }
+
+  @Get('courses/:courseId')
+  @HttpCode(HttpStatus.OK)
+  async getCourseDetail(@Param('courseId') courseId: string) {
+    return this.tutorsService.getCourseDetail(courseId);
   }
 
   // ── CRUD existente ────────────────────────────────────────────────────────
