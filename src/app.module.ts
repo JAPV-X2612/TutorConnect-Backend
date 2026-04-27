@@ -9,6 +9,7 @@ import { SearchModule } from './modules/search/search.module';
 import { BookingsModule } from './modules/bookings/bookings.module';
 import { HealthModule } from './modules/health/health.module';
 import { WebhooksModule } from './modules/webhooks/webhooks.module';
+import { DashboardModule } from './modules/dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { WebhooksModule } from './modules/webhooks/webhooks.module';
     SearchModule,
     BookingsModule,
     WebhooksModule,
+    DashboardModule,
   ],
   providers: [AppService],
 })

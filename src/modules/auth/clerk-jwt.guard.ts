@@ -5,13 +5,16 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import type { Request } from 'express';
-import { verifyToken } from '@clerk/backend';
+import { createClerkClient, verifyToken } from '@clerk/backend';
 import { UserRole } from '../../common/enums/user-role.enum';
+
+const clerk = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
 
 /** Shape attached to the request object after successful JWT verification. */
 export interface ClerkRequestUser {
   clerk_id: string;
   role: UserRole | null;
+  sessionId: string;
 }
 
 /**
@@ -50,9 +53,14 @@ export class ClerkJwtGuard implements CanActivate {
         secretKey: process.env.CLERK_SECRET_KEY,
       });
 
+      const clerkUser = await clerk.users.getUser(payload.sub);
+      const rawRole = clerkUser.publicMetadata?.role as string | undefined;
+      const resolvedRole = (rawRole?.toUpperCase() as UserRole) ?? null;
+
       (request as Request & { user: ClerkRequestUser }).user = {
         clerk_id: payload.sub,
-        role: (payload['role'] as UserRole) ?? null,
+        sessionId: payload.sid,
+        role: resolvedRole,
       };
 
       return true;
