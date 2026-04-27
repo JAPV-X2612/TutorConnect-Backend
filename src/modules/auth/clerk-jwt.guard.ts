@@ -4,11 +4,12 @@ import {
   ExecutionContext,
   UnauthorizedException,
 } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import type { Request } from 'express';
-import { createClerkClient, verifyToken } from '@clerk/backend';
+import { verifyToken } from '@clerk/backend';
 import { UserRole } from '../../common/enums/user-role.enum';
-
-const clerk = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
+import { UserEntity } from '../users/entities/user.entity';
 
 /** Shape attached to the request object after successful JWT verification. */
 export interface ClerkRequestUser {
@@ -20,22 +21,21 @@ export interface ClerkRequestUser {
 /**
  * Guard that validates the Clerk-issued JWT Bearer token on incoming requests.
  *
- * On success it enriches `request.user` with {@link ClerkRequestUser} so that
- * downstream handlers and guards can access the authenticated identity without
- * re-parsing the token.
+ * Role is resolved from the platform database (UserEntity) rather than
+ * Clerk's publicMetadata. This avoids calling clerk.users.getUser() on every
+ * request (expensive Clerk API call) and eliminates the need for
+ * updateUserMetadata(), which triggered user.updated webhooks that caused
+ * "invalid state" alerts in the Expo Clerk SDK.
  *
  * @author TutorConnect Team
  */
 @Injectable()
 export class ClerkJwtGuard implements CanActivate {
-  /**
-   * Validates the Bearer token extracted from the Authorization header.
-   *
-   * @param context - NestJS execution context providing access to the HTTP request.
-   * @returns `true` when the token is valid; throws otherwise.
-   * @throws {UnauthorizedException} When the header is missing, the token is
-   *   expired, or the signature cannot be verified.
-   */
+  constructor(
+    @InjectRepository(UserEntity)
+    private readonly userRepository: Repository<UserEntity>,
+  ) {}
+
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<Request>();
     const authHeader = request.headers['authorization'];
@@ -53,12 +53,15 @@ export class ClerkJwtGuard implements CanActivate {
         secretKey: process.env.CLERK_SECRET_KEY,
       });
 
-      const clerkUser = await clerk.users.getUser(payload.sub);
-      const rawRole = clerkUser.publicMetadata?.role as string | undefined;
-      const resolvedRole = (rawRole?.toUpperCase() as UserRole) ?? null;
+      const clerkId = payload.sub;
+
+      // Read role from our database — faster than calling Clerk API and
+      // avoids the updateUserMetadata → user.updated → SDK "invalid state" cycle.
+      const user = await this.userRepository.findOne({ where: { clerkId } });
+      const resolvedRole = (user?.role as UserRole) ?? null;
 
       (request as Request & { user: ClerkRequestUser }).user = {
-        clerk_id: payload.sub,
+        clerk_id: clerkId,
         sessionId: payload.sid,
         role: resolvedRole,
       };
