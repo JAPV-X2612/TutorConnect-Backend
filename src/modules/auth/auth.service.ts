@@ -1,6 +1,5 @@
-import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
-import { UsersService } from '../users/users.service';
-import { UserEntity } from '../users/entities/user.entity';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import { createClerkClient } from '@clerk/backend';
 
 /**
  * Authentication service for MOD-AUT-001.
@@ -15,39 +14,34 @@ import { UserEntity } from '../users/entities/user.entity';
  */
 @Injectable()
 export class AuthService {
-  private readonly logger = new Logger(AuthService.name);
+  private readonly clerk = createClerkClient({
+    secretKey: process.env.CLERK_SECRET_KEY,
+  });
 
-  constructor(private readonly usersService: UsersService) {}
-
-  /**
-   * Validates that a Clerk subject has a corresponding local user profile.
-   *
-   * Called after JWT signature verification to ensure the identity is
-   * registered in the platform database.
-   *
-   * @param clerkId - Clerk subject identifier extracted from the JWT (`sub` claim).
-   * @returns The matching {@link UserEntity}.
-   * @throws {UnauthorizedException} When no local profile exists for the given Clerk id.
-   */
-  async validateUser(clerkId: string): Promise<UserEntity> {
-    this.logger.debug(`Validating user with clerk_id=${clerkId}`);
-    const user = await this.usersService.findByClerkId(clerkId);
-    if (!user) {
-      throw new UnauthorizedException(
-        'No platform profile found for this identity. Please complete registration.',
-      );
+  async logout(sessionId: string): Promise<{ message: string }> {
+    try {
+      await this.clerk.sessions.revokeSession(sessionId);
+    } catch (error: any) {
+      // Sesión ya expirada o inexistente — tratar como éxito (idempotente)
+      const msg: string = error?.message ?? '';
+      const status: number = error?.status ?? 0;
+      if (status === 404 || msg.toLowerCase().includes('not found') || msg.toLowerCase().includes('expir')) {
+        return { message: 'Sesión cerrada correctamente' };
+      }
+      throw new InternalServerErrorException('Error al cerrar sesión');
     }
-    return user;
+    return { message: 'Sesión cerrada correctamente' };
   }
 
-  /**
-   * Returns the full platform profile for an authenticated Clerk identity.
-   *
-   * @param clerkId - Clerk subject identifier.
-   * @returns The matching {@link UserEntity}.
-   * @throws {UnauthorizedException} When no local profile exists.
-   */
-  async getProfile(clerkId: string): Promise<UserEntity> {
-    return this.validateUser(clerkId);
+  getMe(user: { clerk_id: string; role: string }): {
+    clerk_id: string;
+    role: string;
+    session_activa: boolean;
+  } {
+    return {
+      clerk_id: user.clerk_id,
+      role: user.role ?? 'APRENDIZ',
+      session_activa: true,
+    };
   }
 }

@@ -30,6 +30,16 @@ import { CreateCourseDto } from './dtos/create-course.dto';
 export class TutorsController {
   constructor(private readonly tutorsService: TutorsService) {}
 
+  // ── GET /tutors/me ───────────────────────────────────────────────────────
+
+  @Get('me')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(ClerkJwtGuard)
+  async getMe(@Req() req: Request) {
+    const { clerk_id } = (req as any).user;
+    return this.tutorsService.getMe(clerk_id);
+  }
+
   // ── POST /tutors/register ────────────────────────────────────────────────
 
   @Post('register')
@@ -38,16 +48,6 @@ export class TutorsController {
   async register(@Body() dto: RegisterTutorDto, @Req() req: Request) {
     const { clerk_id } = (req as any).user; // TODO: Fix error
     return this.tutorsService.register(clerk_id, dto); // TODO: Fix warning
-  }
-
-  // ── GET /tutors/me ───────────────────────────────────────────────────────
-
-  @Get('me')
-  @HttpCode(HttpStatus.OK)
-  @UseGuards(ClerkJwtGuard)
-  async getMe(@Req() req: Request) {
-    const { clerk_id } = (req as any).user;
-    return this.tutorsService.findByClerkId(clerk_id);
   }
 
   // ── PUT /tutors/me ────────────────────────────────────────────────────────

@@ -2,6 +2,7 @@ import {
   IsString,
   IsNotEmpty,
   IsOptional,
+  IsEmail,
   MaxLength,
   IsArray,
   IsNumber,
@@ -9,6 +10,10 @@ import {
 } from 'class-validator';
 
 export class RegisterTutorDto {
+  @IsEmail()
+  @IsNotEmpty()
+  email: string;
+
   @IsString()
   @IsNotEmpty({ message: 'El nombre es requerido' })
   nombre: string;
