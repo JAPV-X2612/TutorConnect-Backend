@@ -197,6 +197,21 @@ export class TutorsService {
     };
   }
 
+  // ── POST /tutors/me/certifications ───────────────────────────────────────
+
+  async uploadOwnCertificacion(
+    clerkId: string,
+    file: Express.Multer.File,
+  ): Promise<{
+    id: string;
+    nombre_archivo: string;
+    s3_url: string;
+    mime_type: string;
+  }> {
+    const tutor = await this.findByClerkId(clerkId);
+    return this.uploadCertificacion(tutor.id, clerkId, file);
+  }
+
   // ── GET /tutors/:id/certificaciones ──────────────────────────────────────
 
   async getCertificaciones(tutorId: string): Promise<

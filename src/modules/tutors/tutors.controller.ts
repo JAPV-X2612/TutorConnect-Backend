@@ -14,10 +14,18 @@ import {
   UseGuards,
   UseInterceptors,
   UploadedFile,
+  ParseUUIDPipe,
+  BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import type { Request } from 'express';
+
+interface AuthenticatedRequest extends Request {
+  user: { clerk_id: string; role: string };
+}
+
 import { TutorsService } from './tutors.service';
 import { TutorEntity } from '../../database/entities/tutor.entity';
 import { CreateTutorDto } from './dtos/create-tutor.dto';
@@ -28,6 +36,8 @@ import { CreateCourseDto } from './dtos/create-course.dto';
 
 @Controller('tutors')
 export class TutorsController {
+  private readonly logger = new Logger(TutorsController.name);
+
   constructor(private readonly tutorsService: TutorsService) {}
 
   // ── GET /tutors/me ───────────────────────────────────────────────────────
@@ -97,6 +107,28 @@ export class TutorsController {
   async deleteCourse(@Param('courseId') courseId: string, @Req() req: Request) {
     const { clerk_id } = (req as any).user;
     return this.tutorsService.deleteCourse(courseId, clerk_id);
+  }
+
+  // ── POST /tutors/me/certifications ───────────────────────────────────────
+
+  @Post('me/certifications')
+  @HttpCode(HttpStatus.CREATED)
+  @UseGuards(ClerkJwtGuard)
+  @UseInterceptors(FileInterceptor('file', { storage: memoryStorage() }))
+  async uploadMyCertificacion(
+    @UploadedFile() file: Express.Multer.File,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    if (!file) {
+      this.logger.warn(
+        `Upload failed — no file received. Content-Type=${req.headers['content-type']}`,
+      );
+      throw new BadRequestException(
+        'No se recibió ningún archivo. Asegúrate de enviarlo con field name "file" en multipart/form-data.',
+      );
+    }
+    const { clerk_id } = req.user;
+    return this.tutorsService.uploadOwnCertificacion(clerk_id, file);
   }
 
   // ── POST /tutors/:id/certificaciones ────────────────────────────────────

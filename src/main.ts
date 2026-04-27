@@ -10,6 +10,15 @@ async function bootstrap() {
   // Disable built-in body parser so we can control it per-route
   const app = await NestFactory.create(AppModule, { bodyParser: false });
 
+  app.enableCors({
+    origin: true,
+    credentials: true,
+    methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'ngrok-skip-browser-warning'],
+  });
+
+  app.setGlobalPrefix('api');
+
   // Serve static files from uploads/
   const uploadsDir = join(process.cwd(), 'uploads');
   if (!existsSync(uploadsDir)) mkdirSync(uploadsDir, { recursive: true });
