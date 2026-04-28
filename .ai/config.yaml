@@ -1,0 +1,98 @@
+# ============================================================
+# MediSync Backend — Universal AI Configuration
+# This file is the single source of truth for all AI agents.
+# Referenced by: CLAUDE.md, GEMINI.md, AGENTS.md, .github/copilot-instructions.md
+# ============================================================
+
+project:
+  name: medi-sync-backend
+  display_name: "MediSync Backend"
+  version: "1.0"
+  description: "Event-driven microservices backend for medical appointment management"
+  repo: https://github.com/JAPV-X2612/medi-sync-backend
+  course: "Arquitectura Centrada en el Negocio (ARCN_M)"
+
+stack:
+  language: TypeScript
+  language_version: "5"
+  runtime: "Node.js 20 LTS"
+  framework: "NestJS 11"
+  orm: TypeORM
+  database: "PostgreSQL 16"
+  messaging: "RabbitMQ 3.13"
+  validation: "class-validator + class-transformer"
+  config: "@nestjs/config + Joi"
+  containerization: "Docker + Docker Compose"
+  testing: "Jest + Supertest"
+  static_analysis: SonarCloud
+  deployment: Railway
+  frontend_deployment: Vercel
+
+architecture:
+  pattern: "Hexagonal Architecture (Ports & Adapters)"
+  domain_model: DDD
+  communication: "Event-Driven (topic exchange)"
+  layers:
+    - domain        # Core business logic — zero external imports
+    - application   # Use cases — one class per operation with .execute()
+    - infrastructure # Adapters — implements ports with real technology
+    - presentation  # NestJS HTTP controllers
+
+services:
+  api-gateway:      { port: 3000, role: "HTTP proxy — single entry point" }
+  auth-service:     { port: 3001, role: "Auth stub — out of scope" }
+  patient-service:  { port: 3002, role: "Patient CRUD + event.patient.registered" }
+  doctor-service:   { port: 3003, role: "Doctor/specialty/schedule CRUD + event.doctor.profile-created" }
+  appointments-service: { port: 3004, role: "Appointment lifecycle + email confirmation" }
+
+conventions:
+  code_language: english
+  naming:
+    classes: PascalCase
+    interfaces: PascalCase
+    enums: PascalCase
+    methods: camelCase
+    variables: camelCase
+    constants: UPPER_SNAKE_CASE
+    files: kebab-case
+    folders: kebab-case
+    env_vars: UPPER_SNAKE_CASE
+    database_columns: snake_case
+  jsdoc:
+    required_on: [exported classes, interfaces, use-cases]
+    format: |
+      /**
+       * Brief description.
+       *
+       * @authors Andrés Chavarro, Jesús Pinzón, Laura Rodríguez, Sergio Bejarano
+       * @version 1.0
+       * @since YYYY-MM-DD
+       */
+
+quality:
+  coverage_threshold: 80
+  test_framework: jest
+  test_naming: "should / shouldNot pattern"
+  test_structure: "AAA (Arrange - Act - Assert)"
+  min_coverage: 80
+  linting: eslint
+  formatting: prettier
+
+authors:
+  - name: "Camilo Quintero"
+    github: https://github.com/CamiloQuinteroR
+  - name: "Jesús Pinzón"
+    github: https://github.com/JAPV-X2612
+  - name: "Laura Rodríguez"
+    github: https://github.com/LauraRo166
+  - name: "Santiago Díaz"
+    github: https://github.com/buba-0511
+  - name: "Sergio Bejarano"
+    github: https://github.com/SergioBejarano
+
+ai:
+  context_file: .ai/AGENTS.md
+  skills_dir: .ai/skills/
+  hooks_dir: .ai/hooks/
+  specs_dir: specs/features/
+  memory_dir: .claude/projects/
