@@ -2,7 +2,7 @@
 name: clean-code
 description: Apply SOLID principles, clean naming, and remove code smells in TypeScript/NestJS
 triggers: [refactor, rename, simplify, clean, SOLID, smell, improve quality]
-applies_to: [all services]
+applies_to: [all modules]
 ---
 
 # Clean Code Skill
@@ -10,72 +10,71 @@ applies_to: [all services]
 ## SOLID Applied to This Project
 
 ### Single Responsibility
-- One use case class per business operation, one `.execute()` method.
-- Domain entity ≠ ORM entity ≠ DTO — they are always separate classes.
-- Controllers only validate input and delegate to use cases. Zero business logic.
+- Each NestJS service method handles one business operation.
+- Controllers only validate input and delegate to services. Zero business logic in controllers.
+- Entity ≠ DTO — they are always separate classes. Never expose entities directly in API responses.
 
 ### Open/Closed
-- New behavior → new use case class. Never modify existing ones.
-- Extend behavior through new port implementations, not by editing existing ones.
+- New business behavior → new service method or new service class. Avoid modifying existing methods unnecessarily.
+- Extend functionality through new DTOs and new endpoints rather than adding flags to existing ones.
 
 ### Liskov Substitution
-- Repository adapters must be fully substitutable for their port interface.
-- Any mock used in tests must pass the same assertions as the real implementation.
+- Any mock repository used in tests must be substitutable for the real TypeORM repository.
 
 ### Interface Segregation
-- Ports define only what the current use case needs — no fat interfaces.
-- If two use cases need different subsets of a repository, define two ports.
+- DTOs define only what each endpoint needs — no fat request/response objects that mix concerns.
+- If two endpoints need different subsets of data, define two separate DTOs.
 
 ### Dependency Inversion
-- Use cases depend on repository interfaces and port interfaces.
-- Never import TypeORM, amqplib, or nodemailer inside `domain/` or `application/`.
+- Services depend on TypeORM repositories injected via NestJS DI, not on concrete implementations.
+- Never import module-specific entities directly in other modules — use `TypeOrmModule.forFeature([Entity])`.
 
 ---
 
 ## Naming Rules
 
 **Methods:**
-- Express intent: `findPatientById`, not `get`, `fetch`, or `retrieve`.
-- Boolean methods: `isActive()`, `canBeCancelled()`, `hasAvailableSlots()`.
-- Avoid: `handleData`, `processInfo`, `doStuff`, `execute` on non-use-case classes.
+- Express intent: `findBookingById`, not `get`, `fetch`, or `retrieve`.
+- Boolean methods: `isAvailable()`, `canBeCancelled()`, `hasCompletedSessions()`.
+- Avoid: `handleData`, `processInfo`, `doStuff`.
 
 **Variables:**
 - Avoid single letters except loop indices (`i`, `j`).
 - Avoid generic names: `data`, `result`, `item`, `temp`, `obj`, `response`.
-- Arrays/collections → plural noun: `patients`, `schedules`, `appointmentIds`.
+- Arrays/collections → plural noun: `bookings`, `tutors`, `sessionIds`.
 
 **Classes:**
-- Use case: `CreatePatientUseCase`, `ConfirmAppointmentUseCase`.
-- Repository port: `PatientRepository`, `DoctorRepository`.
-- ORM entity: `PatientOrmEntity`, `DoctorOrmEntity`.
-- DTO: `CreatePatientDto`, `PatientResponseDto`.
+- Service: `BookingService`, `DashboardService`.
+- Entity: `BookingEntity`, `UserEntity`.
+- DTO: `CreateBookingDto`, `TutorDashboardDto`.
+- Guard: `ClerkJwtGuard`, `RoleGuard`.
 
 ---
 
 ## Function Rules
 
 - Max ~20 lines per method. Extract a private method if longer.
-- Max 3 parameters. Use an options object or DTO for more.
-- No boolean flag parameters — `save(true)` → split into `saveAndPublish()` / `saveQuietly()`.
+- Max 3 parameters. Use a DTO or options object for more.
+- No boolean flag parameters — split into two clear methods instead.
 - Return early to avoid deep nesting:
 
 ```typescript
 // Bad
-async execute(id: string) {
-  const patient = await this.repo.findById(id);
-  if (patient) {
-    if (patient.isActive) {
+async getBooking(id: string, clerkId: string) {
+  const booking = await this.repo.findOne({ where: { id } });
+  if (booking) {
+    if (booking.student.clerkId === clerkId) {
       // ... 20 lines
     }
   }
 }
 
 // Good
-async execute(id: string) {
-  const patient = await this.repo.findById(id);
-  if (!patient) throw new NotFoundException(`Patient ${id} not found`);
-  if (!patient.isActive) throw new ConflictException('Patient is not active');
-  // ... 
+async getBooking(id: string, clerkId: string) {
+  const booking = await this.repo.findOne({ where: { id } });
+  if (!booking) throw new NotFoundException(`Booking ${id} not found`);
+  if (booking.student.clerkId !== clerkId) throw new ForbiddenException();
+  // ...
 }
 ```
 
@@ -84,13 +83,13 @@ async execute(id: string) {
 ## Comment Rules
 
 Write a comment ONLY when the WHY is non-obvious:
-- A hidden constraint (e.g., RabbitMQ `amq.rabbitmq.reply-to` requires `noAck: true`)
-- A subtle invariant the reader would miss
+- A hidden constraint (e.g., Clerk JWT TTL is 60s — the SDK rotates automatically)
+- A subtle invariant (e.g., `synchronize: true` is forbidden outside local)
 - A workaround for a known external bug
 
 **Never write:**
 ```typescript
-// Get patient by id         ← explains WHAT (obvious)
+// Get booking by id         ← explains WHAT (obvious)
 // Loop through each item    ← explains WHAT (obvious)
 // Added for issue #123      ← belongs in git history
 ```
@@ -99,21 +98,20 @@ Write a comment ONLY when the WHY is non-obvious:
 
 ## TypeScript Rules
 
-- No `any` without a comment explaining why it's unavoidable.
-- Prefer `unknown` over `any` for external data boundaries.
+- No `any` — prohibited in this project. Use explicit types or `unknown` at external boundaries.
 - Use `readonly` on class properties that should not be reassigned.
 - Prefer `interface` for object shapes, `type` for unions/intersections.
-- Enable `strict: true` in `tsconfig.json` — no exceptions.
+- `strict: true` in `tsconfig.json` — no exceptions.
 
 ---
 
 ## Pre-submit Checklist
 
-- [ ] No magic numbers or hardcoded strings
+- [ ] No magic numbers or hardcoded strings (no hardcoded `clerkId`, commission rates, or base URLs)
 - [ ] No duplicated logic (DRY)
-- [ ] Every exported class has JSDoc header with authors
-- [ ] No `any` type without justification
+- [ ] Every exported class has JSDoc header (`@author | @version | @since`)
+- [ ] No `any` type anywhere
 - [ ] No commented-out code (remove it — git history preserves it)
 - [ ] No `console.log` in production code (use NestJS `Logger`)
-- [ ] All edge cases handled at system boundaries only (controllers/DTOs)
-- [ ] Dependency arrow points inward — domain has no infra imports
+- [ ] Input validation applied only in DTOs (controllers and services trust validated data)
+- [ ] `clerkId` never accepted as path param, query param, or request body

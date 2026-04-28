@@ -15,7 +15,6 @@ ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 if [[ -n "${1:-}" ]]; then
   EDITED_FILE="$1"
 else
-  # Try to read from stdin (Claude Code PostToolUse payload)
   PAYLOAD=$(cat 2>/dev/null || true)
   EDITED_FILE=$(echo "$PAYLOAD" | grep -o '"file_path":"[^"]*"' | head -1 | cut -d'"' -f4 || true)
 fi
@@ -33,24 +32,15 @@ if [[ "$EDITED_FILE" != *.ts ]]; then
   exit 0
 fi
 
-# --- Identify the service that owns the file ---
-SERVICE_DIR=""
-for SVC in patient-service doctor-service appointments-service api-gateway auth-service; do
-  if [[ "$EDITED_FILE" == *"services/$SVC"* ]]; then
-    SERVICE_DIR="$ROOT/services/$SVC"
-    break
-  fi
-done
-
-if [[ -z "$SERVICE_DIR" ]]; then
-  echo "[post-edit] File is not inside a service directory — skipping."
+# --- Skip files outside src/ (migrations, test fixtures, config, etc. are handled separately) ---
+if [[ "$EDITED_FILE" != *"/src/"* ]]; then
+  echo "[post-edit] File is not inside src/ — skipping lint."
   exit 0
 fi
 
-echo "[post-edit] Service: $(basename "$SERVICE_DIR")"
+cd "$ROOT"
 
-# --- Run ESLint on the changed file ---
-cd "$SERVICE_DIR"
+# --- Run ESLint with auto-fix on the changed file ---
 echo "[post-edit] Running ESLint..."
 npx eslint "$EDITED_FILE" --fix --quiet 2>&1 || true
 

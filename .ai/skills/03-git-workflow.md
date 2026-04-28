@@ -12,8 +12,8 @@ applies_to: [all]
 ```
 main              ← production-ready code only
   └── development ← integration branch (if used)
-        └── feature/US-001-register-patient
-        └── feature/US-003-create-doctor
+        └── feature/US-001-register-user
+        └── feature/US-002-create-booking
         └── fix/appointment-email-confirmation
         └── chore/update-dependencies
         └── docs/improve-readme
@@ -57,18 +57,20 @@ Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
 
 ### Scopes (for this project)
 
-`patient-service`, `doctor-service`, `appointments-service`, `api-gateway`, `docker`, `ci`, `specs`, `docs`
+`auth`, `users`, `tutors`, `bookings`, `messaging`, `dashboard`, `reviews`, `payments`, `search`, `webhooks`, `migrations`, `docker`, `ci`, `docs`
 
 ### Good commit examples
 
 ```
-feat(patient-service): add create-patient use case with event publishing
+feat(dashboard): add GET /dashboard/tutor endpoint with monthly metrics aggregation
 
-fix(appointments-service): use POSTGRES_PASS instead of POSTGRES_PASSWORD in Joi schema
+fix(bookings): extract clerkId from JWT instead of request body
 
-test(doctor-service): add unit tests for create-doctor use case covering edge cases
+test(dashboard): add unit tests for tutor dashboard empty state scenario
 
-chore(api-gateway): install @nestjs/swagger and configure SwaggerModule
+chore(migrations): generate AddReviewRatingIndex migration for calificacion_promedio query
+
+feat(search): integrate Pinecone vector search for AI-powered tutor lookup
 ```
 
 ---
@@ -85,16 +87,19 @@ chore(api-gateway): install @nestjs/swagger and configure SwaggerModule
 ```markdown
 ## Summary
 - What changed and why (2-3 bullet points)
-- Reference to User Story: US-XXX
+- Reference to User Story: HU-XX
 
 ## Test plan
-- [ ] Unit tests pass (`npm test`)
+- [ ] Unit tests pass (`npm run test`)
 - [ ] Coverage ≥ 80% (`npm run test:cov`)
-- [ ] TypeScript compiles (`npm run build`)
-- [ ] Manual verification in Postman / Swagger UI
+- [ ] TypeScript compiles without errors (`npm run build`)
+- [ ] ESLint passes (`npm run lint`)
+- [ ] Manual verification with Postman or curl
+- [ ] Docker Compose local environment runs correctly
 
-## Related specs
-- `specs/features/<path>.feature`
+## Notes
+- [ ] `.env.example` updated if new environment variables were added
+- [ ] TypeORM migration generated and applied if schema changed
 ```
 
 ---
