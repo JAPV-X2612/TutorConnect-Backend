@@ -1,5 +1,6 @@
 import {
   Injectable,
+  Logger,
   NotFoundException,
   ConflictException,
   ForbiddenException,
@@ -7,14 +8,15 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { createClerkClient } from '@clerk/backend';
 import { randomUUID } from 'crypto';
 import { TutorEntity } from '../../database/entities/tutor.entity';
 import { CertificacionEntity } from '../../database/entities/certificacion.entity';
+import { TutorCourseEntity } from './entities/tutor-course.entity';
 import { StorageService } from '../../storage/storage.service';
 import { CreateTutorDto } from './dtos/create-tutor.dto';
 import { UpdateTutorDto } from './dtos/update-tutor.dto';
 import { RegisterTutorDto } from './dtos/register-tutor.dto';
+import { CreateCourseDto } from './dtos/create-course.dto';
 import { EstadoTutor } from '../../common/enums/estado-tutor.enum';
 import { UserEntity } from '../users/entities/user.entity';
 import { UserRole } from '../../common/enums/user-role.enum';
@@ -26,15 +28,15 @@ const MAX_CERTIFICACIONES = 10;
 
 @Injectable()
 export class TutorsService {
-  private readonly clerk = createClerkClient({
-    secretKey: process.env.CLERK_SECRET_KEY,
-  });
+  private readonly logger = new Logger(TutorsService.name);
 
   constructor(
     @InjectRepository(TutorEntity)
     private readonly tutorRepository: Repository<TutorEntity>,
     @InjectRepository(CertificacionEntity)
     private readonly certRepository: Repository<CertificacionEntity>,
+    @InjectRepository(TutorCourseEntity)
+    private readonly courseRepository: Repository<TutorCourseEntity>,
     @InjectRepository(UserEntity)
     private readonly userRepository: Repository<UserEntity>,
     private readonly storageService: StorageService,
@@ -45,7 +47,19 @@ export class TutorsService {
   async getMe(clerkId: string): Promise<{
     exists: boolean;
     id?: string;
+    nombre?: string;
+    apellido?: string;
+    cedula?: string;
+    descripcion?: string;
+    bio?: string;
+    subjects?: string[];
+    precioHora?: number;
+    experienceYears?: number;
+    estado?: string;
+    disponible?: boolean;
+    rating?: number;
     hasCertificaciones?: boolean;
+    user?: { email?: string; city?: string; country?: string };
   }> {
     const tutor = await this.tutorRepository.findOne({
       where: { clerkId },
@@ -54,10 +68,26 @@ export class TutorsService {
 
     if (!tutor) return { exists: false };
 
+    const userRow = await this.userRepository.findOne({ where: { clerkId } });
+
     return {
       exists: true,
       id: tutor.id,
+      nombre: tutor.nombre,
+      apellido: tutor.apellido,
+      cedula: tutor.cedula,
+      descripcion: tutor.descripcion,
+      bio: tutor.bio,
+      subjects: tutor.subjects,
+      precioHora: tutor.precioHora,
+      experienceYears: tutor.experienceYears,
+      estado: tutor.estado,
+      disponible: tutor.disponible,
+      rating: tutor.rating,
       hasCertificaciones: tutor.certificaciones.length > 0,
+      user: userRow
+        ? { email: userRow.email, city: userRow.city ?? undefined, country: userRow.country }
+        : undefined,
     };
   }
 
@@ -67,6 +97,8 @@ export class TutorsService {
     clerkId: string,
     dto: RegisterTutorDto,
   ): Promise<{ id: string; nombre: string; apellido: string; estado: EstadoTutor }> {
+    this.logger.log(`[register] Request received for clerk_id=${clerkId}`);
+
     const existing = await this.tutorRepository.findOne({ where: { clerkId } });
     if (existing) throw new ConflictException('El tutor ya está registrado');
 
@@ -75,29 +107,57 @@ export class TutorsService {
       email: dto.email,
       nombre: dto.nombre,
       apellido: dto.apellido,
+      cedula: dto.cedula,
       descripcion: dto.descripcion,
+      subjects: dto.especialidades ?? [],
+      precioHora: dto.tarifa_hora ?? 0,
+      experienceYears: dto.experiencia_years,
       estado: EstadoTutor.PENDIENTE,
     });
 
     const saved = await this.tutorRepository.save(tutor);
 
-    // Upsert into unified user table so GET /users/me works for tutors.
+    // Upsert into UserEntity — handles both "webhook arrived" and "webhook not yet" cases.
     const existingUser = await this.userRepository.findOne({ where: { clerkId } });
     if (!existingUser) {
-      const userRow = this.userRepository.create({
-        clerkId,
-        email: dto.email,
-        firstName: dto.nombre,
-        lastName: dto.apellido,
-        role: UserRole.TUTOR,
-        status: UserStatus.ACTIVE,
-      });
-      await this.userRepository.save(userRow);
-    }
+      // Check by email in case the user deleted and re-registered (re-link).
+      const byEmail = dto.email
+        ? await this.userRepository.findOne({ where: { email: dto.email } })
+        : null;
 
-    await this.clerk.users.updateUserMetadata(clerkId, {
-      publicMetadata: { role: 'TUTOR' },
-    });
+      if (byEmail) {
+        this.logger.log(
+          `[register] Re-linking email=${dto.email} from clerk_id=${byEmail.clerkId} → ${clerkId}`,
+        );
+        byEmail.clerkId = clerkId;
+        byEmail.firstName = dto.nombre || byEmail.firstName;
+        byEmail.lastName = dto.apellido || byEmail.lastName;
+        byEmail.role = UserRole.TUTOR;
+        if (dto.ciudad) byEmail.city = dto.ciudad.toUpperCase();
+        await this.userRepository.save(byEmail);
+      } else {
+        const userRow = this.userRepository.create({
+          clerkId,
+          email: dto.email,
+          firstName: dto.nombre,
+          lastName: dto.apellido,
+          role: UserRole.TUTOR,
+          status: UserStatus.ACTIVE,
+          city: dto.ciudad ? dto.ciudad.toUpperCase() : undefined,
+        });
+        await this.userRepository.save(userRow);
+      }
+    } else {
+      // User already exists — correct role if webhook defaulted to LEARNER.
+      if (existingUser.role !== UserRole.TUTOR) {
+        this.logger.log(
+          `[register] Correcting role LEARNER → TUTOR for clerk_id=${clerkId}`,
+        );
+        existingUser.role = UserRole.TUTOR;
+      }
+      if (dto.ciudad) existingUser.city = dto.ciudad.toUpperCase();
+      await this.userRepository.save(existingUser);
+    }
 
     return {
       id: saved.id,
@@ -133,13 +193,10 @@ export class TutorsService {
       throw new BadRequestException('El archivo no puede superar 5 MB');
     }
     if (tutor.certificaciones.length >= MAX_CERTIFICACIONES) {
-      throw new BadRequestException(
-        'No se pueden subir más de 10 certificaciones',
-      );
+      throw new BadRequestException('No se pueden subir más de 10 certificaciones');
     }
 
     const s3Key = `certificaciones/${tutorId}/${randomUUID()}-${file.originalname}`;
-
     await this.storageService.uploadFile(s3Key, file.buffer, file.mimetype);
 
     // Store only the s3Key — pre-signed URLs expire and must not be persisted
@@ -150,17 +207,32 @@ export class TutorsService {
       s3Url: null,
       mimeType: file.mimetype,
     });
-    const saved = await this.certRepository.save(cert);
+    const savedCert = await this.certRepository.save(cert);
 
     // Generate a fresh pre-signed URL only for this response (valid 15 min)
     const s3Url = await this.storageService.getPresignedUrl(s3Key, 900);
 
     return {
-      id: saved.id,
-      nombre_archivo: saved.nombreArchivo,
+      id: savedCert.id,
+      nombre_archivo: savedCert.nombreArchivo,
       s3_url: s3Url,
-      mime_type: saved.mimeType,
+      mime_type: savedCert.mimeType,
     };
+  }
+
+  // ── POST /tutors/me/certifications ───────────────────────────────────────
+
+  async uploadOwnCertificacion(
+    clerkId: string,
+    file: Express.Multer.File,
+  ): Promise<{
+    id: string;
+    nombre_archivo: string;
+    s3_url: string;
+    mime_type: string;
+  }> {
+    const tutor = await this.findByClerkId(clerkId);
+    return this.uploadCertificacion(tutor.id, clerkId, file);
   }
 
   // ── GET /tutors/:id/certificaciones ──────────────────────────────────────
@@ -174,9 +246,7 @@ export class TutorsService {
       created_at: Date;
     }>
   > {
-    const tutor = await this.tutorRepository.findOne({
-      where: { id: tutorId },
-    });
+    const tutor = await this.tutorRepository.findOne({ where: { id: tutorId } });
     if (!tutor) throw new NotFoundException('Tutor no encontrado');
 
     const certs = await this.certRepository.find({
@@ -195,7 +265,7 @@ export class TutorsService {
     );
   }
 
-  // ── CRUD existente ────────────────────────────────────────────────────────
+  // ── CRUD ──────────────────────────────────────────────────────────────────
 
   async create(dto: CreateTutorDto): Promise<TutorEntity> {
     const tutor = this.tutorRepository.create({
@@ -206,8 +276,8 @@ export class TutorsService {
       experienceYears: dto.experienceYears,
     } as any);
 
-    const saved = await this.tutorRepository.save(tutor as any); // TODO: Fix warning
-    return Array.isArray(saved) ? saved[0] : saved; // TODO: Fix warning
+    const saved = await this.tutorRepository.save(tutor as any);
+    return Array.isArray(saved) ? saved[0] : saved;
   }
 
   async findAll(subject?: string): Promise<TutorEntity[]> {
@@ -226,15 +296,169 @@ export class TutorsService {
     return tutor;
   }
 
+  async findByClerkId(clerkId: string): Promise<TutorEntity> {
+    const tutor = await this.tutorRepository.findOne({
+      where: { clerkId },
+      relations: ['certificaciones'],
+    });
+    if (!tutor) throw new NotFoundException('Tutor profile not found');
+    return tutor;
+  }
+
   async update(id: string, dto: UpdateTutorDto): Promise<TutorEntity> {
     const tutor = await this.findOne(id);
-    Object.assign(tutor, dto as any);
-    const saved = await this.tutorRepository.save(tutor as any); // TODO: Fix warning
-    return Array.isArray(saved) ? saved[0] : saved; // TODO: Fix warning
+
+    if (dto.nombre !== undefined) tutor.nombre = dto.nombre;
+    if (dto.apellido !== undefined) tutor.apellido = dto.apellido;
+    if (dto.cedula !== undefined) tutor.cedula = dto.cedula;
+    if (dto.descripcion !== undefined) tutor.descripcion = dto.descripcion;
+    if (dto.bio !== undefined) tutor.bio = dto.bio;
+    if (dto.subjects !== undefined) tutor.subjects = dto.subjects;
+    if (dto.precioHora !== undefined) tutor.precioHora = dto.precioHora;
+    if (dto.experienceYears !== undefined) tutor.experienceYears = dto.experienceYears;
+
+    // City lives on UserEntity — update via clerkId.
+    if (dto.ciudad !== undefined) {
+      const userRow = await this.userRepository.findOne({ where: { clerkId: tutor.clerkId } });
+      if (userRow) {
+        userRow.city = dto.ciudad.toUpperCase();
+        await this.userRepository.save(userRow);
+      }
+    }
+
+    return this.tutorRepository.save(tutor);
   }
 
   async remove(id: string): Promise<void> {
     const tutor = await this.findOne(id);
     await this.tutorRepository.remove(tutor);
+  }
+
+  // ── Course management ─────────────────────────────────────────────────────
+
+  async createCourse(clerkId: string, dto: CreateCourseDto): Promise<TutorCourseEntity> {
+    const tutor = await this.findByClerkId(clerkId);
+    const course = this.courseRepository.create({
+      tutor,
+      subject: dto.subject,
+      description: dto.description,
+      price: dto.price,
+      duration: dto.duration ?? 60,
+      modalidad: dto.modalidad,
+      academicLevel: dto.academicLevel,
+      isActive: true,
+    });
+    const saved = await this.courseRepository.save(course);
+    this.logger.log(`[courses] Created course "${dto.subject}" for tutor ${tutor.id}`);
+    return saved;
+  }
+
+  async getCourses(clerkId: string): Promise<TutorCourseEntity[]> {
+    const tutor = await this.findByClerkId(clerkId);
+    return this.courseRepository.find({
+      where: { tutor: { id: tutor.id } },
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  async updateCourse(
+    courseId: string,
+    clerkId: string,
+    partial: Partial<CreateCourseDto> & { isActive?: boolean },
+  ): Promise<TutorCourseEntity> {
+    const tutor = await this.findByClerkId(clerkId);
+    const course = await this.courseRepository.findOne({
+      where: { id: courseId, tutor: { id: tutor.id } },
+    });
+    if (!course) throw new NotFoundException('Curso no encontrado');
+    Object.assign(course, partial);
+    return this.courseRepository.save(course);
+  }
+
+  async deleteCourse(courseId: string, clerkId: string): Promise<void> {
+    const tutor = await this.findByClerkId(clerkId);
+    const course = await this.courseRepository.findOne({
+      where: { id: courseId, tutor: { id: tutor.id } },
+    });
+    if (!course) throw new NotFoundException('Curso no encontrado');
+    await this.courseRepository.remove(course);
+  }
+
+  // ── Public marketplace ────────────────────────────────────────────────────
+
+  async getCourseListings(subject?: string): Promise<object[]> {
+    const qb = this.courseRepository
+      .createQueryBuilder('course')
+      .leftJoinAndSelect('course.tutor', 'tutor')
+      .where('course.isActive = true');
+
+    if (subject) {
+      qb.andWhere('LOWER(course.subject) LIKE LOWER(:subject)', {
+        subject: `%${subject}%`,
+      });
+    }
+
+    const courses = await qb.orderBy('course.created_at', 'DESC').getMany();
+
+    return courses.map((c) => ({
+      id: c.id,
+      subject: c.subject,
+      description: c.description,
+      price: c.price,
+      duration: c.duration,
+      modalidad: c.modalidad,
+      academicLevel: c.academicLevel,
+      schedule: c.schedule ?? [],
+      tutor: {
+        id: c.tutor?.id,
+        nombre: c.tutor?.nombre,
+        apellido: c.tutor?.apellido,
+        bio: c.tutor?.bio ?? c.tutor?.descripcion,
+        rating: c.tutor?.rating,
+        disponible: c.tutor?.disponible,
+      },
+    }));
+  }
+
+  async getCourseDetail(courseId: string): Promise<object> {
+    const course = await this.courseRepository.findOne({
+      where: { id: courseId, isActive: true },
+      relations: ['tutor', 'tutor.certificaciones'],
+    });
+    if (!course) throw new NotFoundException('Curso no encontrado');
+
+    const userRow = course.tutor?.clerkId
+      ? await this.userRepository.findOne({ where: { clerkId: course.tutor.clerkId } })
+      : null;
+
+    return {
+      id: course.id,
+      subject: course.subject,
+      description: course.description,
+      price: course.price,
+      duration: course.duration,
+      modalidad: course.modalidad,
+      academicLevel: course.academicLevel,
+      schedule: course.schedule ?? [],
+      tutor: {
+        id: course.tutor?.id,
+        nombre: course.tutor?.nombre,
+        apellido: course.tutor?.apellido,
+        bio: course.tutor?.bio ?? course.tutor?.descripcion,
+        rating: course.tutor?.rating,
+        experienceYears: course.tutor?.experienceYears,
+        disponible: course.tutor?.disponible,
+        subjects: course.tutor?.subjects,
+        email: userRow?.email,
+        city: userRow?.city
+          ? userRow.city.charAt(0) + userRow.city.slice(1).toLowerCase()
+          : undefined,
+        certificaciones: (course.tutor?.certificaciones ?? []).map((cert) => ({
+          id: cert.id,
+          nombreArchivo: cert.nombreArchivo,
+          mimeType: cert.mimeType,
+        })),
+      },
+    };
   }
 }

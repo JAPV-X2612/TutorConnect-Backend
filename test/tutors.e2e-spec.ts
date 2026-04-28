@@ -59,7 +59,8 @@ describe('Tutors (e2e)', () => {
             'Ingeniero de software con 5 años de experiencia',
           );
           expect(res.body).toHaveProperty('subjects');
-          expect(res.body.subjects).toEqual([ // TODO: Fix error
+          expect(res.body.subjects).toEqual([
+            // TODO: Fix error
             'JavaScript',
             'TypeScript',
             'Node.js',

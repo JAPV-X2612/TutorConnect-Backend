@@ -175,7 +175,8 @@ describe('Bookings (e2e)', () => {
         .expect(200)
         .expect((res) => {
           expect(Array.isArray(res.body)).toBe(true);
-          if (res.body.length > 0) { // TODO: Fix errors
+          if (res.body.length > 0) {
+            // TODO: Fix errors
             expect(res.body[0]).toHaveProperty('id');
             expect(res.body[0]).toHaveProperty('student');
             expect(res.body[0]).toHaveProperty('tutor');
