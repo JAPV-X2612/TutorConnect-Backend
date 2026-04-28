@@ -4,7 +4,6 @@ import { Repository } from 'typeorm';
 import { BookingEntity } from '../bookings/entities/booking.entity';
 import { ReviewEntity } from '../reviews/entities/review.entity';
 import { UserEntity } from '../users/entities/user.entity';
-import { BookingStatus } from '../../common/enums/booking-status.enum';
 import {
   LearnerDashboardDto,
   UpcomingSessionDto,
@@ -16,13 +15,7 @@ import {
   TutorDashboardResponseDto,
 } from './dto/tutor-dashboard.dto';
 
-/** Statuses that count as "active" — non-cancelled, non-expired bookings. */
-const ACTIVE_BOOKING_STATUSES: BookingStatus[] = [
-  BookingStatus.PENDING_CONFIRMATION,
-  BookingStatus.CONFIRMED,
-  BookingStatus.COMPLETED,
-  BookingStatus.RESCHEDULED,
-];
+const ACTIVE_BOOKING_STATUSES = ['pending', 'confirmed', 'completed'];
 
 /**
  * Business logic service for the dashboard module.
@@ -83,14 +76,14 @@ export class DashboardService {
     const base = () =>
       this.bookingRepo
         .createQueryBuilder('b')
-        .innerJoin('b.learner', 'l')
+        .innerJoin('b.student', 'l')
         .where('l.id = :userId', { userId })
-        .andWhere('b.scheduledAt >= :weekStart', { weekStart })
-        .andWhere('b.scheduledAt <= :weekEnd', { weekEnd });
+        .andWhere('b.startTime >= :weekStart', { weekStart })
+        .andWhere('b.startTime <= :weekEnd', { weekEnd });
 
     const [completed, total] = await Promise.all([
       base()
-        .andWhere('b.status = :completed', { completed: BookingStatus.COMPLETED })
+        .andWhere('b.status = :completed', { completed: 'completed' })
         .getCount(),
       base()
         .andWhere('b.status IN (:...statuses)', { statuses: ACTIVE_BOOKING_STATUSES })
@@ -112,20 +105,20 @@ export class DashboardService {
   ): Promise<UpcomingSessionDto[]> {
     const bookings = await this.bookingRepo
       .createQueryBuilder('b')
-      .innerJoinAndSelect('b.learner', 'l')
+      .innerJoinAndSelect('b.student', 'l')
       .innerJoinAndSelect('b.tutor', 't')
       .where('l.id = :userId', { userId })
-      .andWhere('b.scheduledAt > :now', { now: new Date() })
+      .andWhere('b.startTime > :now', { now: new Date() })
       .andWhere('b.status IN (:...statuses)', { statuses: ACTIVE_BOOKING_STATUSES })
-      .orderBy('b.scheduledAt', 'ASC')
+      .orderBy('b.startTime', 'ASC')
       .take(5)
       .getMany();
 
     return bookings.map((b) => ({
       id: String(b.id),
-      subject: (b.tutor.specialties ?? [])[0] ?? 'Sesión',
-      tutorName: `${b.tutor.firstName} ${b.tutor.lastName}`.trim(),
-      scheduledAt: b.scheduledAt,
+      subject: (b.tutor.subjects ?? [])[0] ?? b.subject ?? 'Sesión',
+      tutorName: `${b.tutor.nombre} ${b.tutor.apellido}`.trim(),
+      scheduledAt: b.startTime,
       status: b.status,
     }));
   }
@@ -172,9 +165,9 @@ export class DashboardService {
         .createQueryBuilder('b')
         .select('COUNT(b.id)', 'total_sesiones')
         .innerJoin('b.tutor', 't', 't.clerkId = :clerkId', { clerkId })
-        .where('b.status = :status', { status: BookingStatus.COMPLETED })
-        .andWhere('b.scheduledAt >= :monthStart', { monthStart })
-        .andWhere('b.scheduledAt < :monthEnd', { monthEnd })
+        .where('b.status = :status', { status: 'completed' })
+        .andWhere('b.startTime >= :monthStart', { monthStart })
+        .andWhere('b.startTime < :monthEnd', { monthEnd })
         .getRawOne<{ total_sesiones: string }>(),
 
       this.reviewRepo
@@ -204,21 +197,21 @@ export class DashboardService {
   ): Promise<ProximaSesionDto[]> {
     const bookings = await this.bookingRepo
       .createQueryBuilder('b')
-      .leftJoinAndSelect('b.learner', 'learner')
+      .leftJoinAndSelect('b.student', 'learner')
       .innerJoin('b.tutor', 't', 't.clerkId = :clerkId', { clerkId })
-      .where('b.status = :status', { status: BookingStatus.CONFIRMED })
-      .andWhere('b.scheduledAt > :now', { now: new Date() })
-      .orderBy('b.scheduledAt', 'ASC')
+      .where('b.status = :status', { status: 'confirmed' })
+      .andWhere('b.startTime > :now', { now: new Date() })
+      .orderBy('b.startTime', 'ASC')
       .take(5)
       .getMany();
 
     return bookings.map((b) => ({
       id: String(b.id),
-      fecha: b.scheduledAt,
-      aprendiz_nombre: b.learner
-        ? `${b.learner.firstName} ${b.learner.lastName}`.trim()
+      fecha: b.startTime,
+      aprendiz_nombre: b.student
+        ? `${b.student.firstName} ${b.student.lastName}`.trim()
         : 'N/A',
-      materia: null,
+      materia: b.subject ?? null,
     }));
   }
 }
