@@ -173,6 +173,7 @@ export class BookingsService {
         ? {
             tutor: {
               id: b.tutor.id,
+              clerkId: b.tutor.clerkId,
               nombre: b.tutor.nombre,
               apellido: b.tutor.apellido,
             },
@@ -182,6 +183,7 @@ export class BookingsService {
         ? {
             learner: {
               id: b.student.id,
+              clerkId: b.student.clerkId,
               firstName: b.student.firstName,
               lastName: b.student.lastName,
               email: b.student.email,

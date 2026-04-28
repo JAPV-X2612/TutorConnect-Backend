@@ -1,7 +1,9 @@
 import {
+  Column,
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
+  Index,
   JoinColumn,
   ManyToOne,
   OneToMany,
@@ -11,75 +13,64 @@ import {
 } from 'typeorm';
 import { BookingEntity } from '../../bookings/entities/booking.entity';
 import { UserEntity } from '../../users/entities/user.entity';
+import { TutorCourseEntity } from '../../tutors/entities/tutor-course.entity';
 import { MessageEntity } from './message.entity';
 
 /**
- * Represents a persistent bidirectional chat channel between a learner and a
- * tutor, scoped to a confirmed booking.
+ * Persistent bidirectional chat channel between a learner and a tutor.
  *
- * Business rules (enforced at the service layer):
- * - Channels are created automatically when a booking transitions to
- *   {@code BookingStatus.CONFIRMED}.
- * - Channels become read-only when the associated booking transitions to
- *   {@code CANCELLED_BY_LEARNER}, {@code CANCELLED_BY_TUTOR}, or
- *   {@code EXPIRED}.
- * - Only learners may initiate a new channel; the backend enforces this
- *   regardless of client input.
+ * Pre-booking channels (no confirmed booking yet) carry an `expiresAt`
+ * timestamp 24 hours after creation. Once a booking is confirmed the
+ * expiry is cleared and the channel remains open indefinitely.
  *
  * @author TutorConnect Team
  */
 @Entity('chat_channel')
+@Index(['tutor', 'learner'], { unique: true })
 export class ChatChannelEntity {
-  /**
-   * Surrogate primary key — bigint identity column.
-   */
   @PrimaryGeneratedColumn('identity')
   id: number;
 
+  /** False when the channel has been closed due to cancellation or admin action. */
+  @Column({ name: 'is_active', type: 'boolean', default: true })
+  isActive: boolean;
+
   /**
-   * Timestamp of record creation — managed automatically by TypeORM.
+   * Expiry for pre-booking channels (24 h from creation).
+   * Null once a booking is confirmed — channel is then permanent.
    */
+  @Column({ name: 'expires_at', type: 'timestamp with time zone', nullable: true })
+  expiresAt: Date | null;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 
-  /**
-   * Timestamp of the most recent update — managed automatically by TypeORM.
-   */
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
 
-  /**
-   * Soft-delete timestamp. Null while the record is active.
-   */
   @DeleteDateColumn({ name: 'deleted_at', nullable: true })
   deletedAt: Date | null;
 
   // ── Relations ────────────────────────────────────────────────────────────────
 
-  /**
-   * The confirmed booking that originated this channel.
-   */
-  @OneToOne(() => BookingEntity, { onDelete: 'CASCADE', nullable: false })
-  @JoinColumn({ name: 'booking_id' })
-  booking: BookingEntity;
+  /** Course the conversation is about — set on creation and never changed. */
+  @ManyToOne(() => TutorCourseEntity, { onDelete: 'SET NULL', nullable: true, eager: false })
+  @JoinColumn({ name: 'course_id' })
+  course: TutorCourseEntity | null;
 
-  /**
-   * The tutor participant (user with role TUTOR).
-   */
+  /** Originating booking — nullable so the channel survives booking deletion. */
+  @OneToOne(() => BookingEntity, { onDelete: 'SET NULL', nullable: true })
+  @JoinColumn({ name: 'booking_id' })
+  booking: BookingEntity | null;
+
   @ManyToOne(() => UserEntity, { onDelete: 'CASCADE', nullable: false })
   @JoinColumn({ name: 'tutor_id' })
   tutor: UserEntity;
 
-  /**
-   * The learner participant (user with role LEARNER).
-   */
   @ManyToOne(() => UserEntity, { onDelete: 'CASCADE', nullable: false })
   @JoinColumn({ name: 'learner_id' })
   learner: UserEntity;
 
-  /**
-   * All messages exchanged in this channel.
-   */
   @OneToMany(() => MessageEntity, (message) => message.channel)
   messages: MessageEntity[];
 }
