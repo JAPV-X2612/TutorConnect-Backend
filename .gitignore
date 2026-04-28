@@ -263,3 +263,9 @@ vector-cache/
 uploads/
 public/uploads/
 **/scripts/
+DELETE/
+
+# ============================================
+# CLAUDE CODE
+# ============================================
+.claude/settings.local.json
