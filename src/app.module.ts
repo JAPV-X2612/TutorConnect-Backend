@@ -10,6 +10,7 @@ import { BookingsModule } from './modules/bookings/bookings.module';
 import { HealthModule } from './modules/health/health.module';
 import { WebhooksModule } from './modules/webhooks/webhooks.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
+import { MessagingModule } from './modules/messaging/messaging.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
     BookingsModule,
     WebhooksModule,
     DashboardModule,
+    MessagingModule,
   ],
   providers: [AppService],
 })

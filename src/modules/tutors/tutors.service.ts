@@ -442,6 +442,7 @@ export class TutorsService {
       schedule: course.schedule ?? [],
       tutor: {
         id: course.tutor?.id,
+        clerkId: course.tutor?.clerkId,
         nombre: course.tutor?.nombre,
         apellido: course.tutor?.apellido,
         bio: course.tutor?.bio ?? course.tutor?.descripcion,
