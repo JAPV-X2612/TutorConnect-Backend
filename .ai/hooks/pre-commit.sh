@@ -2,58 +2,48 @@
 # ============================================================
 # Hook: pre-commit
 # Runs before a git commit to enforce quality gates.
-# Can be called directly or wired into .claude/settings.json.
+# Can be called directly or used as a git pre-commit hook.
 # ============================================================
 
 set -euo pipefail
 
 ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
-SERVICES=("patient-service" "doctor-service" "appointments-service" "api-gateway")
 FAILED=0
 
 echo ""
 echo "╔══════════════════════════════════════════╗"
-echo "║         MediSync — Pre-Commit Check      ║"
+echo "║    TutorConnect — Pre-Commit Check       ║"
 echo "╚══════════════════════════════════════════╝"
 
-# --- Check each service that has staged TypeScript changes ---
-for SVC in "${SERVICES[@]}"; do
-  SVC_DIR="$ROOT/services/$SVC"
+# --- Check if there are staged TypeScript changes in src/ ---
+STAGED_TS=$(git diff --cached --name-only | grep '^src/.*\.ts$' || true)
 
-  if [[ ! -d "$SVC_DIR" ]]; then
-    continue
-  fi
-
-  # Only check services with staged .ts changes
-  STAGED=$(git diff --cached --name-only -- "services/$SVC/src/**/*.ts" 2>/dev/null || true)
-  if [[ -z "$STAGED" ]]; then
-    continue
-  fi
-
+if [[ -z "$STAGED_TS" ]]; then
   echo ""
-  echo "▶ Checking $SVC..."
-  cd "$SVC_DIR"
-
-  # TypeScript compile
-  echo "  [tsc] Checking types..."
-  if ! npx tsc --noEmit --skipLibCheck 2>&1 | head -20; then
-    echo "  ✗ TypeScript errors found in $SVC"
-    FAILED=1
-  else
-    echo "  ✓ Types OK"
-  fi
-
-  # ESLint
-  echo "  [eslint] Linting..."
-  if ! npx eslint src/ --quiet 2>&1 | head -20; then
-    echo "  ✗ ESLint errors in $SVC"
-    FAILED=1
-  else
-    echo "  ✓ Lint OK"
-  fi
-
+  echo "ℹ️  No staged TypeScript files in src/ — skipping type and lint checks."
+else
   cd "$ROOT"
-done
+
+  # --- TypeScript type check ---
+  echo ""
+  echo "▶ Running TypeScript type check..."
+  if ! npx tsc --noEmit --skipLibCheck 2>&1 | head -30; then
+    echo "✗ TypeScript errors found — fix before committing."
+    FAILED=1
+  else
+    echo "✓ Types OK"
+  fi
+
+  # --- ESLint ---
+  echo ""
+  echo "▶ Running ESLint..."
+  if ! npx eslint src/ --quiet 2>&1 | head -30; then
+    echo "✗ ESLint errors found — fix before committing."
+    FAILED=1
+  else
+    echo "✓ Lint OK"
+  fi
+fi
 
 echo ""
 
@@ -65,15 +55,16 @@ if [[ "$FAILED" -eq 1 ]]; then
   exit 1
 fi
 
-# --- Verify .env is not staged ---
+# --- Block .env from being committed ---
 if git diff --cached --name-only | grep -q "^\.env$"; then
   echo "╔══════════════════════════════════════════╗"
   echo "║  ✗ .env file is staged — NEVER commit it ║"
   echo "╚══════════════════════════════════════════╝"
+  echo ""
   exit 1
 fi
 
 echo "╔══════════════════════════════════════════╗"
-echo "║   ✓ All pre-commit checks passed          ║"
+echo "║   ✓ All pre-commit checks passed         ║"
 echo "╚══════════════════════════════════════════╝"
 echo ""

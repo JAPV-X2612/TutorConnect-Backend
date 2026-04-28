@@ -2,7 +2,7 @@
 name: api-design
 description: REST endpoint design, DTO conventions, and Swagger documentation for this project
 triggers: [API, endpoint, REST, DTO, Swagger, OpenAPI, controller, route]
-applies_to: [api-gateway, all services]
+applies_to: [all modules]
 ---
 
 # API Design Skill
@@ -29,9 +29,10 @@ applies_to: [api-gateway, all services]
 | `201` | Resource created |
 | `204` | Successful deletion (empty body) |
 | `400` | Validation error (class-validator) |
+| `401` | Missing or invalid Clerk JWT |
+| `403` | Valid JWT but insufficient role (RoleGuard) |
 | `404` | Resource not found (NotFoundException) |
 | `409` | Business rule conflict (ConflictException) |
-| `502` | Downstream service unavailable (gateway only) |
 
 ### URL Structure
 
@@ -47,21 +48,24 @@ applies_to: [api-gateway, all services]
 
 ```typescript
 /**
- * Input DTO for the create-patient use case.
- * @authors Andrés Chavarro, ...
+ * Input DTO for creating a new booking.
+ *
+ * @author Camilo Quintero, Jesús Pinzón, Laura Rodríguez, Santiago Díaz, Sergio Bejarano
  * @version 1.0
  * @since YYYY-MM-DD
  */
-export class CreatePatientDto {
-  @IsString()
+export class CreateBookingDto {
+  @IsUUID()
   @IsNotEmpty()
-  @MaxLength(100)
-  firstName: string;
+  courseId: string;
+
+  @IsDateString()
+  startTime: string;
 
   @IsString()
-  @IsOptional()   // Only for optional fields
-  @MaxLength(5)
-  bloodType?: string;
+  @IsOptional()
+  @MaxLength(500)
+  notes?: string;
 }
 ```
 
@@ -75,7 +79,7 @@ export class CreatePatientDto {
 ### Response DTO (`XxxResponseDto`)
 
 ```typescript
-export class PatientResponseDto {
+export class UserResponseDto {
   @Expose() id: string;
   @Expose() firstName: string;
   @Expose() email: string;
@@ -88,17 +92,25 @@ export class PatientResponseDto {
 ## Controller Rules
 
 ```typescript
-@Controller('patients')
-export class PatientsController {
+@Controller('bookings')
+@UseGuards(ClerkJwtGuard)
+export class BookingsController {
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  create(@Body() dto: CreatePatientDto): Promise<PatientResponseDto> {
-    return this.createPatient.execute(dto);
+  create(@Body() dto: CreateBookingDto, @Req() req: Request): Promise<BookingDto> {
+    const clerkId = req.user.clerkId; // Always from JWT — never from body
+    return this.bookingsService.create(clerkId, dto);
   }
 
   @Get(':id')
-  findById(@Param('id', ParseUUIDPipe) id: string): Promise<PatientResponseDto> {
-    return this.findPatientById.execute(id);
+  findById(@Param('id', ParseUUIDPipe) id: string): Promise<BookingDto> {
+    return this.bookingsService.findById(id);
+  }
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  cancel(@Param('id', ParseUUIDPipe) id: string, @Req() req: Request): Promise<void> {
+    return this.bookingsService.cancel(id, req.user.clerkId);
   }
 }
 ```
@@ -108,25 +120,27 @@ export class PatientsController {
 - Use `@HttpCode(HttpStatus.CREATED)` on `@Post` handlers
 - Use `@HttpCode(HttpStatus.NO_CONTENT)` on `@Delete` handlers
 - Never use `@All()` — always use specific method decorators
+- `clerkId` is ALWAYS extracted from `req.user.clerkId` — never from body, query, or path
 
 ---
 
-## Swagger (API Gateway only)
-
-Every gateway endpoint must have:
+## Swagger (Swagger UI at `/api`)
 
 ```typescript
-@ApiTags('patients')
-@Controller()
-export class PatientsProxyController {
+@ApiTags('bookings')
+@Controller('bookings')
+@UseGuards(ClerkJwtGuard)
+export class BookingsController {
 
-  @Post('patients')
+  @Post()
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Register a new patient' })
-  @ApiBody({ schema: { type: 'object', required: ['firstName'], properties: { ... } } })
-  @ApiResponse({ status: 201, description: 'Patient created successfully.' })
+  @ApiOperation({ summary: 'Create a new booking' })
+  @ApiBearerAuth()
+  @ApiBody({ type: CreateBookingDto })
+  @ApiResponse({ status: 201, description: 'Booking created successfully.' })
   @ApiResponse({ status: 400, description: 'Validation error.' })
-  @ApiResponse({ status: 409, description: 'Email already registered.' })
+  @ApiResponse({ status: 401, description: 'Missing or invalid Clerk JWT.' })
+  @ApiResponse({ status: 403, description: 'Insufficient role.' })
   create(...) { ... }
 }
 ```
@@ -134,9 +148,16 @@ export class PatientsProxyController {
 **Swagger setup in `main.ts`:**
 ```typescript
 const config = new DocumentBuilder()
-  .setTitle('MediSync API')
+  .setTitle('TutorConnect API')
   .setVersion('1.0')
-  .addTag('patients', 'Patient registration and management')
+  .addBearerAuth()
+  .addTag('auth', 'Authentication and session management')
+  .addTag('users', 'User profile management')
+  .addTag('tutors', 'Tutor profiles, courses and certifications')
+  .addTag('bookings', 'Session booking lifecycle')
+  .addTag('messaging', 'Real-time chat channels')
+  .addTag('dashboard', 'Tutor and learner dashboards')
+  .addTag('reviews', 'Session reviews and ratings')
   .build();
 
 SwaggerModule.setup('api', app, SwaggerModule.createDocument(app, config));

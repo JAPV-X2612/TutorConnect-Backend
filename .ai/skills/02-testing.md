@@ -2,17 +2,16 @@
 name: testing
 description: Write unit and e2e tests for NestJS services following Jest + AAA conventions
 triggers: [test, spec, coverage, unit test, e2e, TDD, BDD, scenario]
-applies_to: [all services]
+applies_to: [all modules]
 ---
 
 # Testing Skill
 
 ## Framework & Setup
 
-- **Unit tests:** Jest, co-located with class (`create-patient.use-case.spec.ts`)
-- **E2e tests:** Supertest, in `test/` directory (`patients.e2e-spec.ts`)
-- **Minimum coverage:** 80% (`npm run test:cov`)
-- **Coverage format:** lcov (uploaded to SonarCloud)
+- **Unit tests:** Jest, co-located with service class (`booking.service.spec.ts`)
+- **E2e tests:** Supertest, in `test/` directory (`bookings.e2e-spec.ts`)
+- **Minimum coverage:** 80% per service file (`npm run test:cov`)
 
 ---
 
@@ -21,10 +20,10 @@ applies_to: [all services]
 Use the `should` / `should not` pattern — always a full sentence:
 
 ```typescript
-it('should create a patient and publish a registered event')
-it('should throw NotFoundException when patient does not exist')
-it('should not allow duplicate email registration')
-it('should return 204 when patient is successfully deleted')
+it('should return tutor dashboard metrics for the current month')
+it('should throw NotFoundException when booking does not exist')
+it('should not allow a learner to access the tutor dashboard')
+it('should return empty arrays when tutor has no activity')
 ```
 
 ---
@@ -32,17 +31,20 @@ it('should return 204 when patient is successfully deleted')
 ## AAA Structure (mandatory)
 
 ```typescript
-it('should return the patient when found by id', async () => {
+it('should return tutor metrics when tutor has completed sessions', async () => {
   // Arrange
-  const patient = Patient.create({ firstName: 'John', ... });
-  mockRepository.findById.mockResolvedValue(patient);
+  const clerkId = 'user_abc123';
+  mockBookingRepo.count.mockResolvedValue(5);
+  mockPaymentRepo.sum.mockResolvedValue(350000);
+  mockReviewRepo.average.mockResolvedValue(4.7);
 
   // Act
-  const result = await useCase.execute({ id: patient.id });
+  const result = await service.getTutorDashboard(clerkId);
 
   // Assert
-  expect(result.id).toBe(patient.id);
-  expect(result.firstName).toBe('John');
+  expect(result.metricas.total_sesiones).toBe(5);
+  expect(result.metricas.ingresos_totales).toBe(350000);
+  expect(result.metricas.calificacion_promedio).toBe(4.7);
 });
 ```
 
@@ -52,61 +54,72 @@ it('should return the patient when found by id', async () => {
 
 | Mock | Why |
 |---|---|
-| TypeORM repositories | External DB — slow and stateful |
-| RabbitMQ ClientProxy | External broker |
-| Email provider (nodemailer/ethereal) | External SMTP |
-| HTTP clients (axios) | External services |
-| **DO NOT mock** domain entities | They are pure TypeScript — test them for real |
-| **DO NOT mock** use case logic | The use case IS what you're testing |
+| TypeORM repositories (`Repository<Entity>`) | External DB — slow and stateful |
+| Redis client | External cache — stateful |
+| Pinecone client | External vector DB |
+| Claude API client | External AI service |
+| Firebase SDK | External notification service |
+| **DO NOT mock** NestJS services under test | The service IS what you're testing |
+| **DO NOT mock** DTOs or plain TypeScript classes | They are pure TS — test them for real |
 
 ### Creating mocks
 
 ```typescript
-const mockRepository: jest.Mocked<PatientRepository> = {
-  findById: jest.fn(),
-  findByEmail: jest.fn(),
+const mockBookingRepo = {
+  findOne: jest.fn(),
+  find: jest.fn(),
+  count: jest.fn(),
   save: jest.fn(),
-  delete: jest.fn(),
-  findAll: jest.fn(),
-};
+} as unknown as jest.Mocked<Repository<BookingEntity>>;
 
-const mockEventPublisher: jest.Mocked<EventPublisher> = {
-  publish: jest.fn(),
-};
+const mockClerkJwtGuard = { canActivate: jest.fn().mockReturnValue(true) };
 ```
 
-### Inject via constructor (never use NestJS DI in unit tests)
+### Inject via NestJS Testing module
 
 ```typescript
-const useCase = new CreatePatientUseCase(mockRepository, mockEventPublisher);
+const module = await Test.createTestingModule({
+  providers: [
+    DashboardService,
+    { provide: getRepositoryToken(BookingEntity), useValue: mockBookingRepo },
+    { provide: getRepositoryToken(ReviewEntity), useValue: mockReviewRepo },
+  ],
+}).compile();
+
+service = module.get<DashboardService>(DashboardService);
 ```
 
 ---
 
 ## Coverage Requirements
 
-Cover ALL of the following in each use case test file:
+Cover ALL of the following in each service test file:
 
-- **Happy path:** normal execution with valid input
-- **Not found:** when repository returns null/undefined
-- **Validation edge cases:** empty strings, null UUIDs, past dates, duplicates
-- **Event publishing:** verify `publish` was called with correct routing key and payload
-- **Error propagation:** when repository throws, the use case re-throws correctly
+- **Happy path:** normal execution with valid input and data present
+- **Empty state:** when the entity has no records (new tutor, new learner)
+- **Not found:** when a required entity does not exist (`NotFoundException`)
+- **Forbidden:** when role does not match the endpoint requirement
+- **Validation edge cases:** null fields, empty arrays, boundary values
+- **Error propagation:** when repository throws, the service re-throws or wraps correctly
 
 ---
 
 ## E2e Test Template
 
 ```typescript
-describe('PatientsController (e2e)', () => {
+describe('DashboardController (e2e)', () => {
   let app: INestApplication;
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
       imports: [AppModule],
     })
-      .overrideProvider(getRepositoryToken(PatientOrmEntity))
-      .useValue(mockTypeOrmRepository)
+      .overrideGuard(ClerkJwtGuard)
+      .useValue({ canActivate: (ctx) => {
+        const req = ctx.switchToHttp().getRequest();
+        req.user = { clerkId: 'user_test123', role: UserRole.TUTOR };
+        return true;
+      }})
       .compile();
 
     app = moduleRef.createNestApplication();
@@ -116,14 +129,14 @@ describe('PatientsController (e2e)', () => {
 
   afterAll(() => app.close());
 
-  it('POST /patients → 201', async () => {
+  it('GET /dashboard/tutor → 200', async () => {
     return request(app.getHttpServer())
-      .post('/patients')
-      .send({ firstName: 'John', ... })
-      .expect(201)
+      .get('/dashboard/tutor')
+      .set('Authorization', 'Bearer mock-token')
+      .expect(200)
       .expect(res => {
-        expect(res.body.id).toBeDefined();
-        expect(res.body.email).toBe('john@email.com');
+        expect(res.body.metricas).toBeDefined();
+        expect(res.body.proximas_sesiones).toBeInstanceOf(Array);
       });
   });
 });
@@ -133,23 +146,22 @@ describe('PatientsController (e2e)', () => {
 
 ## Gherkin → Jest Mapping
 
-When implementing a feature with a Gherkin spec in `specs/features/`, map scenarios to tests:
+Map each Gherkin scenario from the user story to a Jest `it()` block:
 
 ```gherkin
-Scenario: Successfully register a new patient
-  Given I have valid patient data
-  When I send a POST request to "/patients"
-  Then the response status should be 201
-  And a "event.patient.registered" event should be published
+Scenario: El tutor visualiza sus métricas correctamente
+  Given que el tutor ha iniciado sesión
+  When accede a su panel principal
+  Then el sistema debe mostrar el total de sesiones realizadas
 ```
 
 Maps to:
 
 ```typescript
-it('should create a patient and publish event.patient.registered', async () => {
-  // Arrange — valid patient data
-  // Act — call use case
-  // Assert — 201 + event published
+it('should return total sessions for the current month when tutor has activity', async () => {
+  // Arrange — mock completed bookings for current month
+  // Act — call service.getTutorDashboard(clerkId)
+  // Assert — metricas.total_sesiones > 0
 });
 ```
 
@@ -157,7 +169,7 @@ it('should create a patient and publish event.patient.registered', async () => {
 
 ## FIRST Principles Checklist
 
-- [ ] **F**ast — each unit test runs in < 50ms (no real DB/network)
+- [ ] **F**ast — each unit test runs in < 50 ms (no real DB/network/external API)
 - [ ] **I**ndependent — no shared mutable state between `it()` blocks
 - [ ] **R**epeatable — same result every run, no time/random dependencies
 - [ ] **S**elf-validating — `expect()` assertions, no manual inspection needed

@@ -9,32 +9,32 @@ applies_to: [all]
 
 ## JSDoc Rules
 
-### Required header (every exported class, interface, use case)
+### Required header (every exported class, interface, service, controller, DTO)
 
 ```typescript
 /**
  * Brief, single-sentence description of the class or interface.
  *
- * @authors Andrés Chavarro, Jesús Pinzón, Laura Rodríguez, Sergio Bejarano
+ * @author Camilo Quintero, Jesús Pinzón, Laura Rodríguez, Santiago Díaz, Sergio Bejarano
  * @version 1.0
  * @since YYYY-MM-DD
  */
 ```
 
 - `@since` uses the date the file was first created (`YYYY-MM-DD`)
-- Public interface methods get a concise `/** ... */` one-liner
+- Public service methods get a concise `/** ... */` one-liner
 - Private methods get JSDoc only if the WHY is non-obvious
 - Do NOT write multi-paragraph JSDoc that explains what the code does
 
-### Interface methods
+### Service methods
 
 ```typescript
-export interface PatientRepository {
-  /** Persists a new patient and returns the saved entity. */
-  save(patient: Patient): Promise<Patient>;
+export class DashboardService {
+  /** Returns aggregated monthly metrics and upcoming sessions for the given tutor. */
+  getTutorDashboard(clerkId: string): Promise<TutorDashboardDto> { ... }
 
-  /** Returns null when no patient exists with the given id. */
-  findById(id: string): Promise<Patient | null>;
+  /** Returns null when clerkId does not match any active tutor. */
+  findTutorByClerkId(clerkId: string): Promise<UserEntity | null> { ... }
 }
 ```
 
@@ -109,19 +109,23 @@ Every service README should have:
 Write inline comments ONLY for:
 
 ```typescript
-// amq.rabbitmq.reply-to requires noAck: true; false causes PRECONDITION_FAILED
-noAck: true,
+// Clerk JWT TTL is 60s; the SDK auto-rotates — no manual refresh needed here
+const clerkId = req.user.clerkId;
 
 // TypeScript union (string | null) causes reflect-metadata to report Object;
 // explicit type: 'varchar' is required to prevent DataTypeNotSupportedError
-@Column({ name: 'blood_type', type: 'varchar', length: 5, nullable: true })
-bloodType: string | null;
+@Column({ name: 'area_title', type: 'varchar', length: 200, nullable: true })
+areaTitle: string | null;
+
+// synchronize: true is intentionally false — use explicit migrations in all envs
+synchronize: false,
 ```
 
 Do NOT write:
 ```typescript
-// Create a new patient   ← explains WHAT (obvious from the method name)
-// Return the result      ← explains WHAT (obvious)
+// Get booking by id    ← explains WHAT (obvious from the method name)
+// Return the result    ← explains WHAT (obvious)
+// Added for HU-07      ← belongs in git history
 ```
 
 ---
