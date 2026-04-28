@@ -1,6 +1,13 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Expose } from 'class-transformer';
-import { IsString, IsNotEmpty, IsOptional, IsArray, IsEmail, IsInt } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  IsArray,
+  IsEmail,
+  IsInt,
+} from 'class-validator';
 
 export class CreateTutorDto {
   @ApiProperty({ description: 'Clerk ID del tutor', example: 'user_2abc123' })

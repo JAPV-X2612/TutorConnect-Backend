@@ -1,6 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Expose } from 'class-transformer';
-import { IsInt, IsUUID, IsDateString, IsOptional, IsPositive } from 'class-validator';
+import {
+  IsInt,
+  IsUUID,
+  IsDateString,
+  IsOptional,
+  IsPositive,
+} from 'class-validator';
 
 export class CreateBookingDto {
   @ApiProperty({

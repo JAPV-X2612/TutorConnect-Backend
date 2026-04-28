@@ -1,23 +1,58 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { Expose } from 'class-transformer';
-import { IsOptional, IsString, IsArray, IsInt } from 'class-validator';
+import { IsOptional, IsString, IsArray, IsNumber, Min, MaxLength } from 'class-validator';
 
 export class UpdateTutorDto {
-  @ApiPropertyOptional({ description: 'Biografía del tutor' })
+  @ApiPropertyOptional()
   @IsOptional()
   @IsString()
-  @Expose()
+  @MaxLength(100)
+  nombre?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  apellido?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  cedula?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(150)
+  ciudad?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  descripcion?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(1000)
   bio?: string;
 
-  @ApiPropertyOptional({ description: 'Lista de materias' })
+  @ApiPropertyOptional()
   @IsOptional()
   @IsArray()
-  @Expose()
+  @IsString({ each: true })
   subjects?: string[];
 
-  @ApiPropertyOptional({ description: 'Años de experiencia' })
+  @ApiPropertyOptional()
   @IsOptional()
-  @IsInt()
-  @Expose()
+  @IsNumber()
+  @Min(0)
+  precioHora?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
   experienceYears?: number;
 }

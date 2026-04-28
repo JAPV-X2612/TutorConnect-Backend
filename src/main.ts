@@ -10,13 +10,22 @@ async function bootstrap() {
   // Disable built-in body parser so we can control it per-route
   const app = await NestFactory.create(AppModule, { bodyParser: false });
 
+  app.enableCors({
+    origin: true,
+    credentials: true,
+    methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'ngrok-skip-browser-warning'],
+  });
+
+  app.setGlobalPrefix('api');
+
   // Serve static files from uploads/
   const uploadsDir = join(process.cwd(), 'uploads');
   if (!existsSync(uploadsDir)) mkdirSync(uploadsDir, { recursive: true });
   app.use('/uploads', express.static(uploadsDir));
 
   // Raw body for Clerk webhook signature verification (must come first)
-  app.use('/webhooks/clerk', express.raw({ type: 'application/json' }));
+  app.use('/api/webhooks/clerk', express.raw({ type: 'application/json' }));
 
   // Standard body parsers for all other routes
   app.use(express.json());
@@ -68,7 +77,11 @@ async function bootstrap() {
       callback(new Error(`CORS: origin ${origin} not allowed`));
     },
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'ngrok-skip-browser-warning'],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'ngrok-skip-browser-warning',
+    ],
     credentials: true,
   });
 

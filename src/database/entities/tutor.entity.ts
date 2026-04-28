@@ -9,6 +9,7 @@ import {
 } from 'typeorm';
 import { CertificacionEntity } from './certificacion.entity';
 import { EstadoTutor } from '../../common/enums/estado-tutor.enum';
+import { TutorCourseEntity } from '../../modules/tutors/entities/tutor-course.entity';
 
 @Entity('tutors')
 export class TutorEntity {
@@ -28,6 +29,9 @@ export class TutorEntity {
   @Column({ type: 'varchar', length: 100 })
   apellido!: string;
 
+  @Column({ type: 'varchar', length: 20, nullable: true })
+  cedula?: string;
+
   @Column({ type: 'text', nullable: true })
   descripcion?: string;
 
@@ -41,6 +45,9 @@ export class TutorEntity {
 
   @OneToMany(() => CertificacionEntity, (cert) => cert.tutor)
   certificaciones!: CertificacionEntity[];
+
+  @OneToMany(() => TutorCourseEntity, (course) => course.tutor)
+  courses!: TutorCourseEntity[];
 
   @Column({ type: 'text', nullable: true })
   bio?: string;

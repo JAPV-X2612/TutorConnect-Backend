@@ -6,7 +6,7 @@ import { UserEntity } from '../../users/entities/user.entity';
 import { TutorEntity } from '../entities/tutor.entity';
 import { CertificacionEntity } from '../entities/certificacion.entity';
 import { BookingEntity } from '../entities/booking.entity';
-import { TutorEstado } from '../../common/enums/tutor-estado.enum';
+import { EstadoTutor } from '../../common/enums/estado-tutor.enum';
 
 function loadEnvFile(filePath: string): void {
   if (!fs.existsSync(filePath)) return;
@@ -108,7 +108,7 @@ async function seed(): Promise<void> {
     if (existingTutor) {
       existingTutor.precioHora = data.precioHora;
       existingTutor.disponible = data.disponible;
-      existingTutor.estado = TutorEstado.VERIFICADO;
+      existingTutor.estado = EstadoTutor.VERIFICADO;
       await tutorRepo.save(existingTutor);
       console.log(`Updated tutor: ${data.nombre} ${data.apellido}`);
       continue;
@@ -125,10 +125,9 @@ async function seed(): Promise<void> {
       precioHora: data.precioHora,
       experienceYears: data.experienceYears,
       disponible: data.disponible,
-      estado: TutorEstado.VERIFICADO,
+      estado: EstadoTutor.VERIFICADO,
     });
     await tutorRepo.save(tutor);
-
     console.log(`Created tutor: ${data.nombre} ${data.apellido}`);
   }
 
