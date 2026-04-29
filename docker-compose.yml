@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  # Base de datos PostgreSQL
+  # PostgreSQL database
   postgres:
     image: postgres:16-alpine
     container_name: tutorconnect-postgres
@@ -22,7 +22,7 @@ services:
       timeout: 5s
       retries: 5
 
-  # Aplicación NestJS
+  # NestJS application
   app:
     image: node:22-alpine
     working_dir: /app
@@ -54,12 +54,12 @@ services:
       - /app/node_modules
       - ./logs:/app/logs
 
-# Volúmenes persistentes
+# Persistent volumes
 volumes:
   postgres_data:
     driver: local
 
-# Red para comunicación entre servicios
+# Network for communication between services
 networks:
   tutorconnect-network:
     driver: bridge
