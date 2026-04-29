@@ -98,7 +98,9 @@ export class MessagingDBService {
     tutorClerkId: string,
     learnerClerkId: string,
   ): Promise<BookingEntity | null> {
-    const tutorEntity = await this.tutorRepo.findOne({ where: { clerkId: tutorClerkId } });
+    const tutorEntity = await this.tutorRepo.findOne({
+      where: { clerkId: tutorClerkId },
+    });
     if (!tutorEntity) return null;
 
     return this.bookingRepo.findOne({
@@ -118,7 +120,12 @@ export class MessagingDBService {
     sender: UserEntity,
     content: string,
   ): Promise<MessageEntity> {
-    const message = this.messageRepo.create({ channel, sender, content, sentAt: new Date() });
+    const message = this.messageRepo.create({
+      channel,
+      sender,
+      content,
+      sentAt: new Date(),
+    });
     return this.messageRepo.save(message);
   }
 

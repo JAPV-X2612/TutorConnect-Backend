@@ -25,7 +25,11 @@ export class AuthService {
       // Sesión ya expirada o inexistente — tratar como éxito (idempotente)
       const msg: string = error?.message ?? '';
       const status: number = error?.status ?? 0;
-      if (status === 404 || msg.toLowerCase().includes('not found') || msg.toLowerCase().includes('expir')) {
+      if (
+        status === 404 ||
+        msg.toLowerCase().includes('not found') ||
+        msg.toLowerCase().includes('expir')
+      ) {
         return { message: 'Sesión cerrada correctamente' };
       }
       throw new InternalServerErrorException('Error al cerrar sesión');

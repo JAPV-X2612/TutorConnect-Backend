@@ -43,7 +43,12 @@ export class BookingsController {
   @UseGuards(ClerkJwtGuard)
   async create(@Body() dto: CreateBookingDto, @Req() req: Request) {
     const { clerk_id } = (req as any).user;
-    return this.bookingsService.createBooking(clerk_id, dto.courseId, dto.scheduledAt, dto.notes);
+    return this.bookingsService.createBooking(
+      clerk_id,
+      dto.courseId,
+      dto.scheduledAt,
+      dto.notes,
+    );
   }
 
   // ── GET /bookings/me (learner's bookings) ──────────────────────────────────

@@ -9,7 +9,14 @@ import { TutorEntity } from '../../database/entities/tutor.entity';
 import { TutorCourseEntity } from '../tutors/entities/tutor-course.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([BookingEntity, UserEntity, TutorEntity, TutorCourseEntity])],
+  imports: [
+    TypeOrmModule.forFeature([
+      BookingEntity,
+      UserEntity,
+      TutorEntity,
+      TutorCourseEntity,
+    ]),
+  ],
   controllers: [BookingsController],
   providers: [BookingsService, BookingsGateway],
   exports: [BookingsService, BookingsGateway],

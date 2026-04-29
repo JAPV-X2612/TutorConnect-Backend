@@ -37,7 +37,9 @@ export class BookingsService {
     scheduledAt: string,
     notes?: string,
   ): Promise<object> {
-    const learner = await this.userRepository.findOne({ where: { clerkId: learnerClerkId } });
+    const learner = await this.userRepository.findOne({
+      where: { clerkId: learnerClerkId },
+    });
     if (!learner) throw new NotFoundException('Learner profile not found');
 
     const course = await this.courseRepository.findOne({
@@ -66,7 +68,10 @@ export class BookingsService {
     });
 
     const saved = await this.bookingRepository.save(booking);
-    const result = this.formatBooking(saved, { includeTutor: true, includeCourse: true });
+    const result = this.formatBooking(saved, {
+      includeTutor: true,
+      includeCourse: true,
+    });
     // Notify tutor that a new booking request arrived.
     this.gateway.notifyTutor(course.tutor.clerkId, result);
     return result;
@@ -84,13 +89,17 @@ export class BookingsService {
       order: { startTime: 'DESC' },
     });
 
-    return bookings.map((b) => this.formatBooking(b, { includeTutor: true, includeCourse: true }));
+    return bookings.map((b) =>
+      this.formatBooking(b, { includeTutor: true, includeCourse: true }),
+    );
   }
 
   // ── GET /bookings/tutor (tutor) ───────────────────────────────────────────
 
   async getTutorBookings(tutorClerkId: string): Promise<object[]> {
-    const tutor = await this.tutorRepository.findOne({ where: { clerkId: tutorClerkId } });
+    const tutor = await this.tutorRepository.findOne({
+      where: { clerkId: tutorClerkId },
+    });
     if (!tutor) throw new NotFoundException('Tutor profile not found');
 
     const bookings = await this.bookingRepository.find({
@@ -99,7 +108,9 @@ export class BookingsService {
       order: { startTime: 'DESC' },
     });
 
-    return bookings.map((b) => this.formatBooking(b, { includeLearner: true, includeCourse: true }));
+    return bookings.map((b) =>
+      this.formatBooking(b, { includeLearner: true, includeCourse: true }),
+    );
   }
 
   // ── PATCH /bookings/:id/status ────────────────────────────────────────────
@@ -109,7 +120,9 @@ export class BookingsService {
     tutorClerkId: string,
     status: 'confirmed' | 'cancelled',
   ): Promise<object> {
-    const tutor = await this.tutorRepository.findOne({ where: { clerkId: tutorClerkId } });
+    const tutor = await this.tutorRepository.findOne({
+      where: { clerkId: tutorClerkId },
+    });
     if (!tutor) throw new NotFoundException('Tutor profile not found');
 
     const booking = await this.bookingRepository.findOne({
@@ -119,12 +132,17 @@ export class BookingsService {
     if (!booking) throw new NotFoundException('Reserva no encontrada');
     if (booking.tutor.id !== tutor.id) throw new ForbiddenException('Acceso denegado');
     if (booking.status !== 'pending') {
-      throw new BadRequestException('Solo se pueden gestionar reservas pendientes');
+      throw new BadRequestException(
+        'Solo se pueden gestionar reservas pendientes',
+      );
     }
 
     booking.status = status;
     const saved = await this.bookingRepository.save(booking);
-    const result = this.formatBooking(saved, { includeLearner: true, includeCourse: true });
+    const result = this.formatBooking(saved, {
+      includeLearner: true,
+      includeCourse: true,
+    });
     // Notify learner that the tutor responded.
     this.gateway.notifyLearner(booking.student.clerkId, result);
     return result;
@@ -132,8 +150,13 @@ export class BookingsService {
 
   // ── Learner cancel ────────────────────────────────────────────────────────
 
-  async cancelBooking(bookingId: string, learnerClerkId: string): Promise<object> {
-    const learner = await this.userRepository.findOne({ where: { clerkId: learnerClerkId } });
+  async cancelBooking(
+    bookingId: string,
+    learnerClerkId: string,
+  ): Promise<object> {
+    const learner = await this.userRepository.findOne({
+      where: { clerkId: learnerClerkId },
+    });
     if (!learner) throw new NotFoundException('Learner profile not found');
 
     const booking = await this.bookingRepository.findOne({
@@ -148,7 +171,10 @@ export class BookingsService {
 
     booking.status = 'cancelled';
     const saved = await this.bookingRepository.save(booking);
-    const result = this.formatBooking(saved, { includeTutor: true, includeCourse: true });
+    const result = this.formatBooking(saved, {
+      includeTutor: true,
+      includeCourse: true,
+    });
     // Notify tutor that the learner cancelled.
     this.gateway.notifyTutor(booking.tutor.clerkId, result);
     return result;
@@ -158,7 +184,11 @@ export class BookingsService {
 
   private formatBooking(
     b: BookingEntity,
-    opts: { includeTutor?: boolean; includeLearner?: boolean; includeCourse?: boolean },
+    opts: {
+      includeTutor?: boolean;
+      includeLearner?: boolean;
+      includeCourse?: boolean;
+    },
   ): object {
     return {
       id: b.id,
