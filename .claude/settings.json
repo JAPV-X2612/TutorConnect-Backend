@@ -1,0 +1,182 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .ai/hooks/pre-edit.sh"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .ai/hooks/post-edit.sh"
+          }
+        ]
+      }
+    ]
+  },
+
+  "permissions": {
+    "allow": [
+
+      "Bash(pwd)",
+      "Bash(ls)",
+      "Bash(ls *)",
+      "Bash(find *)",
+      "Bash(cat *)",
+      "Bash(head *)",
+      "Bash(tail *)",
+      "Bash(grep *)",
+      "Bash(wc *)",
+      "Bash(diff *)",
+      "Bash(file *)",
+      "Bash(stat *)",
+
+      "Bash(echo *)",
+      "Bash(printf *)",
+      "Bash(which *)",
+      "Bash(type *)",
+      "Bash(uname)",
+      "Bash(uname *)",
+      "Bash(whoami)",
+      "Bash(id)",
+      "Bash(date)",
+      "Bash(env)",
+      "Bash(printenv *)",
+
+      "Bash(sort *)",
+      "Bash(uniq *)",
+      "Bash(tr *)",
+      "Bash(cut *)",
+      "Bash(sed *)",
+      "Bash(awk *)",
+      "Bash(xargs *)",
+      "Bash(tee *)",
+      "Bash(column *)",
+      "Bash(jq *)",
+
+      "Bash(node *)",
+      "Bash(node --version)",
+      "Bash(npm --version)",
+      "Bash(npm install)",
+      "Bash(npm install *)",
+      "Bash(npm ci)",
+      "Bash(npm ci *)",
+      "Bash(npm run build)",
+      "Bash(npm run build *)",
+      "Bash(npm run lint)",
+      "Bash(npm run lint *)",
+      "Bash(npm run format)",
+      "Bash(npm run format *)",
+      "Bash(npm run test)",
+      "Bash(npm run test *)",
+      "Bash(npm run test:cov)",
+      "Bash(npm run test:watch)",
+      "Bash(npm run start:dev)",
+      "Bash(npm list *)",
+      "Bash(npm outdated *)",
+      "Bash(npx *)",
+      "Bash(tsc *)",
+
+      "Bash(git status)",
+      "Bash(git status *)",
+      "Bash(git log *)",
+      "Bash(git diff)",
+      "Bash(git diff *)",
+      "Bash(git branch)",
+      "Bash(git branch *)",
+      "Bash(git show *)",
+      "Bash(git remote *)",
+      "Bash(git config --list)",
+      "Bash(git blame *)",
+      "Bash(git tag)",
+      "Bash(git tag *)",
+      "Bash(git stash list)",
+      "Bash(git --version)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git checkout *)",
+      "Bash(git switch *)",
+      "Bash(git pull)",
+      "Bash(git pull *)",
+      "Bash(git fetch)",
+      "Bash(git fetch *)",
+
+      "Bash(docker info)",
+      "Bash(docker version)",
+      "Bash(docker ps)",
+      "Bash(docker ps *)",
+      "Bash(docker images)",
+      "Bash(docker images *)",
+      "Bash(docker inspect *)",
+      "Bash(docker logs *)",
+      "Bash(docker stats *)",
+      "Bash(docker network *)",
+      "Bash(docker volume *)",
+      "Bash(docker build *)",
+      "Bash(docker compose build *)",
+      "Bash(docker compose up *)",
+      "Bash(docker compose down)",
+      "Bash(docker compose down *)",
+      "Bash(docker compose ps)",
+      "Bash(docker compose ps *)",
+      "Bash(docker compose logs *)",
+      "Bash(docker compose restart *)",
+      "Bash(docker compose stop *)",
+      "Bash(docker compose start *)",
+      "Bash(docker-compose *)",
+
+      "Bash(mkdir *)",
+      "Bash(touch *)",
+      "Bash(cp *)",
+      "Bash(mv *)",
+
+      "Bash(curl *)",
+
+      "Bash(ps)",
+      "Bash(ps *)",
+      "Bash(df *)",
+      "Bash(du *)"
+
+    ],
+    "deny": [
+
+      "Bash(rm *)",
+      "Bash(rmdir *)",
+
+      "Bash(git push --force *)",
+      "Bash(git push -f *)",
+      "Bash(git reset --hard *)",
+      "Bash(git clean *)",
+      "Bash(git checkout -- *)",
+
+      "Bash(npm publish *)",
+      "Bash(npm unpublish *)",
+
+      "Bash(docker rm *)",
+      "Bash(docker rmi *)",
+      "Bash(docker system prune *)",
+      "Bash(docker compose down -v *)",
+      "Bash(docker volume rm *)",
+
+      "Bash(kill *)",
+      "Bash(pkill *)",
+      "Bash(killall *)",
+
+      "Bash(chmod 777 *)",
+      "Bash(sudo *)",
+      "Bash(su *)"
+
+    ]
+  },
+
+  "includeCoAuthoredBy": true
+}

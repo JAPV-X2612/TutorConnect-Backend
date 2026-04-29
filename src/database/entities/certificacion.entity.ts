@@ -25,6 +25,9 @@ export class CertificacionEntity {
   @Column({ name: 's3_key', type: 'varchar', length: 500 })
   s3Key: string;
 
+  @Column({ name: 's3_url', type: 'text', nullable: true })
+  s3Url: string | null;
+
   @Column({ name: 'mime_type', type: 'varchar', length: 100 })
   mimeType: string;
 

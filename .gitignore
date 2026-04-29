@@ -1,56 +1,80 @@
-# Nestjs specific
+# =========================================
+# NestJS / Node.js Base
+# =========================================
 /dist
-/node_modules
 /build
-/tmp
+/node_modules
+/.npm
+.node_repl_history
+*.tsbuildinfo
 
-# Logs
-logs
-*.log
+# =========================================
+# TypeScript
+# =========================================
+*.js.map
+*.d.ts.map
+tsconfig.tsbuildinfo
+
+# =========================================
+# Package Managers
+# =========================================
+# npm
 npm-debug.log*
-pnpm-debug.log*
+package-lock.json.bak
+
+# yarn
 yarn-debug.log*
 yarn-error.log*
+.yarn/
+.yarnrc.yml
+yarn.lock
+
+# pnpm
+pnpm-debug.log*
+.pnpm-store/
+pnpm-lock.yaml
+
+# lerna
 lerna-debug.log*
 
-# dotenv environment variable files
+# =========================================
+# Environment Variables
+# =========================================
 .env
-.env.development
-.env.test
-.env.production
-.env.local
-.env.docker
+.env.*
+!.env.example
+!.env.test.example
 
-# temp directory
-.temp
-.tmp
+# =========================================
+# Testing & Coverage
+# =========================================
+/coverage
+.nyc_output
+jest-coverage/
+test-results/
+*.lcov
+junit.xml
 
-# Docker
-docker-compose.override.yml
-.dockerignore.custom
+# =========================================
+# Type Checkers & Linters
+# =========================================
+.eslintcache
+.stylelintcache
+.prettiercache
 
-# Database
-*.sqlite
-*.db
-*.db-shm
-*.db-wal
-data/
-pgdata/
-
-# ===================================
-# IDEs and Editors
-# ===================================
-
+# =========================================
+# IDEs
+# =========================================
 # Visual Studio Code
 .vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
-.history
+.history/
 *.code-workspace
 
-# IntelliJ IDEA / WebStorm / PyCharm
+# JetBrains (WebStorm / IntelliJ IDEA)
 .idea/
 *.iml
 *.iws
@@ -69,9 +93,7 @@ out/
 
 # NetBeans
 nbproject/private/
-build/
 nbbuild/
-dist/
 nbdist/
 .nb-gradle/
 
@@ -81,7 +103,6 @@ nbdist/
 [._]s[a-rt-v][a-z]
 [._]ss[a-gi-z]
 [._]sw[a-p]
-*~
 
 # Emacs
 \#*\#
@@ -102,18 +123,29 @@ tramp
 # Atom
 .atom/
 
-# ===================================
-# Operating Systems
-# ===================================
+# Cursor
+.cursor/
 
+# =========================================
+# Documentation
+# =========================================
+docs/_build/
+/site
+.cache
+compodoc/
+
+# =========================================
+# Operating Systems
+# =========================================
 # macOS
 .DS_Store
 .DS_Store?
+.AppleDouble
+.LSOverride
 ._*
 .Spotlight-V100
 .Trashes
-.AppleDouble
-.LSOverride
+Icon
 
 # Windows
 Thumbs.db
@@ -122,9 +154,118 @@ ehthumbs.db
 ehthumbs_vista.db
 Desktop.ini
 $RECYCLE.BIN/
+*.lnk
 
 # Linux
 *~
 .fuse_hidden*
 .directory
 .Trash-*
+
+# =========================================
+# Cloud Platforms
+# =========================================
+# AWS
+.aws/
+.aws-sam/
+samconfig.toml
+.serverless/
+
+# =========================================
+# Infrastructure
+# =========================================
+# Docker
+docker-compose.override.yml
+.dockerignore.custom
+
+# Terraform / Terragrunt
+.terraform/
+**/.terraform/
+**/.terragrunt-cache/
+**/.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfvars.json
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+backend.tf
+
+# =========================================
+# Secrets & Credentials
+# =========================================
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.cer
+secrets.yaml
+secrets.json
+credentials.json
+service-account.json
+firebase-adminsdk-*.json
+.clerk/
+stripe-webhook-secrets.txt
+
+# =========================================
+# Logs & Temporary Files
+# =========================================
+logs/
+*.log
+*.tmp
+*.bak
+*.swp
+*.swo
+tmp/
+temp/
+.temp/
+.tmp/
+
+# =========================================
+# Database
+# =========================================
+*.sqlite
+*.db
+*.db-shm
+*.db-wal
+data/
+pgdata/
+postgres-data/
+redis-data/
+dump.rdb
+
+# =========================================
+# Other Related Frameworks & Tools
+# =========================================
+# Firebase
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+
+# Prisma (in case it's used in the future)
+prisma/migrations/*.sql.bak
+
+# OpenAPI / Swagger generated files
+openapi-generated/
+
+# Pinecone / Vector DBs
+vector-cache/
+
+# =========================================
+# Project-Specific
+# =========================================
+uploads/
+public/uploads/
+**/scripts/
+DELETE/
+
+# ============================================
+# CLAUDE CODE
+# ============================================
+.claude/settings.local.json

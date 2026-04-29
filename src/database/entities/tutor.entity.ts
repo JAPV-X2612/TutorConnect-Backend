@@ -2,44 +2,52 @@ import {
   Entity,
   PrimaryGeneratedColumn,
   Column,
-  OneToOne,
+  Index,
   OneToMany,
-  JoinColumn,
   CreateDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { UserEntity } from './user.entity';
 import { CertificacionEntity } from './certificacion.entity';
-import { TutorEstado } from '../../common/enums/tutor-estado.enum';
+import { EstadoTutor } from '../../common/enums/estado-tutor.enum';
+import { TutorCourseEntity } from '../../modules/tutors/entities/tutor-course.entity';
 
 @Entity('tutors')
 export class TutorEntity {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  id!: string;
 
-  @OneToOne(() => UserEntity, { onDelete: 'CASCADE' })
-  @JoinColumn()
-  user: UserEntity;
+  @Index()
+  @Column({ name: 'clerk_id', type: 'varchar', unique: true })
+  clerkId: string;
+
+  @Column({ type: 'varchar', unique: true })
+  email: string;
 
   @Column({ type: 'varchar', length: 100 })
-  nombre: string;
+  nombre!: string;
 
   @Column({ type: 'varchar', length: 100 })
-  apellido: string;
+  apellido!: string;
 
-  @Column({ type: 'varchar', length: 500, nullable: true })
+  @Column({ type: 'varchar', length: 20, nullable: true })
+  cedula?: string;
+
+  @Column({ type: 'text', nullable: true })
   descripcion?: string;
 
   @Column({
     type: 'enum',
-    enum: TutorEstado,
-    enumName: 'tutor_estado_enum',
-    default: TutorEstado.PENDIENTE,
+    enum: EstadoTutor,
+    enumName: 'estado_tutor_enum',
+    default: EstadoTutor.PENDIENTE,
   })
-  estado: TutorEstado;
+  estado: EstadoTutor;
 
   @OneToMany(() => CertificacionEntity, (cert) => cert.tutor)
-  certificaciones: CertificacionEntity[];
+  certificaciones!: CertificacionEntity[];
+
+  @OneToMany(() => TutorCourseEntity, (course) => course.tutor)
+  courses!: TutorCourseEntity[];
 
   @Column({ type: 'text', nullable: true })
   bio?: string;
@@ -53,9 +61,15 @@ export class TutorEntity {
   @Column({ type: 'int', nullable: true })
   experienceYears?: number;
 
+  @Column({ type: 'float', nullable: true, name: 'precio_hora' })
+  precioHora?: number;
+
+  @Column({ type: 'boolean', default: false })
+  disponible!: boolean;
+
   @CreateDateColumn({ name: 'created_at' })
-  createdAt: Date;
+  createdAt!: Date;
 
   @UpdateDateColumn({ name: 'updated_at' })
-  updatedAt: Date;
+  updatedAt!: Date;
 }

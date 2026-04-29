@@ -15,7 +15,7 @@ describe('Bookings (e2e)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
-    
+
     app.useGlobalFilters(new HttpExceptionFilter());
     app.useGlobalPipes(
       new ValidationPipe({
@@ -28,18 +28,18 @@ describe('Bookings (e2e)', () => {
     await app.init();
 
     // Crear usuario estudiante
-    const studentResponse = await request(app.getHttpServer())
+    const studentResponse = await request(app.getHttpServer()) // TODO: Fix warning
       .post('/users')
       .send({
         name: 'Student Test',
         email: 'student.booking@example.com',
         role: 'student',
       });
-    
-    testStudentId = studentResponse.body.id;
+
+    testStudentId = studentResponse.body.id; // TODO: Fix error
 
     // Crear usuario tutor
-    const tutorUserResponse = await request(app.getHttpServer())
+    const tutorUserResponse = await request(app.getHttpServer()) // TODO: Fix warning
       .post('/users')
       .send({
         name: 'Tutor Booking Test',
@@ -48,15 +48,15 @@ describe('Bookings (e2e)', () => {
       });
 
     // Crear perfil de tutor
-    const tutorResponse = await request(app.getHttpServer())
+    const tutorResponse = await request(app.getHttpServer()) // TODO: Fix warning
       .post('/tutors')
       .send({
-        userId: tutorUserResponse.body.id,
+        userId: tutorUserResponse.body.id, // TODO: Fix error
         bio: 'Tutor para bookings test',
         subjects: ['Math'],
       });
-    
-    testTutorId = tutorResponse.body.id;
+
+    testTutorId = tutorResponse.body.id; // TODO: Fix error
   });
 
   afterAll(async () => {
@@ -65,7 +65,7 @@ describe('Bookings (e2e)', () => {
 
   describe('POST /bookings', () => {
     it('debe crear un booking correctamente y retornar 201', () => {
-      return request(app.getHttpServer())
+      return request(app.getHttpServer()) // TODO: Fix warning
         .post('/bookings')
         .send({
           studentId: testStudentId,
@@ -80,16 +80,16 @@ describe('Bookings (e2e)', () => {
           expect(res.body).toHaveProperty('endTime');
           expect(res.body).toHaveProperty('status', 'pending');
           expect(res.body).toHaveProperty('student');
-          expect(res.body.student).toHaveProperty('id', testStudentId);
+          expect(res.body.student).toHaveProperty('id', testStudentId); // TODO: Fix error
           expect(res.body).toHaveProperty('tutor');
-          expect(res.body.tutor).toHaveProperty('id', testTutorId);
+          expect(res.body.tutor).toHaveProperty('id', testTutorId); // TODO: Fix error
         });
     });
 
     it('debe fallar si el studentId no existe (404)', () => {
       const nonExistentId = '00000000-0000-0000-0000-000000000000';
-      
-      return request(app.getHttpServer())
+
+      return request(app.getHttpServer()) // TODO: Fix warning
         .post('/bookings')
         .send({
           studentId: nonExistentId,
@@ -104,8 +104,8 @@ describe('Bookings (e2e)', () => {
 
     it('debe fallar si el tutorId no existe (404)', () => {
       const nonExistentId = '00000000-0000-0000-0000-000000000000';
-      
-      return request(app.getHttpServer())
+
+      return request(app.getHttpServer()) // TODO: Fix warning
         .post('/bookings')
         .send({
           studentId: testStudentId,
@@ -119,7 +119,7 @@ describe('Bookings (e2e)', () => {
     });
 
     it('debe fallar si la fecha no es válida (400)', () => {
-      return request(app.getHttpServer())
+      return request(app.getHttpServer()) // TODO: Fix warning
         .post('/bookings')
         .send({
           studentId: testStudentId,
@@ -133,7 +133,7 @@ describe('Bookings (e2e)', () => {
   describe('GET /bookings/:id', () => {
     it('debe obtener un booking por ID correctamente y retornar 200', async () => {
       // Crear booking
-      const bookingResponse = await request(app.getHttpServer())
+      const bookingResponse = await request(app.getHttpServer()) // TODO: Fix warning
         .post('/bookings')
         .send({
           studentId: testStudentId,
@@ -142,10 +142,10 @@ describe('Bookings (e2e)', () => {
           endTime: '2026-03-15T15:00:00.000Z',
         });
 
-      const bookingId = bookingResponse.body.id;
+      const bookingId = bookingResponse.body.id; // TODO: Fix error
 
       // Obtener el booking
-      return request(app.getHttpServer())
+      return request(app.getHttpServer()) // TODO: Fix warning
         .get(`/bookings/${bookingId}`)
         .expect(200)
         .expect((res) => {
@@ -158,8 +158,8 @@ describe('Bookings (e2e)', () => {
 
     it('debe retornar 404 si el booking no existe', () => {
       const nonExistentId = '00000000-0000-0000-0000-000000000000';
-      
-      return request(app.getHttpServer())
+
+      return request(app.getHttpServer()) // TODO: Fix warning
         .get(`/bookings/${nonExistentId}`)
         .expect(404)
         .expect((res) => {
@@ -170,12 +170,13 @@ describe('Bookings (e2e)', () => {
 
   describe('GET /bookings', () => {
     it('debe obtener todos los bookings y retornar 200', () => {
-      return request(app.getHttpServer())
+      return request(app.getHttpServer()) // TODO: Fix warning
         .get('/bookings')
         .expect(200)
         .expect((res) => {
           expect(Array.isArray(res.body)).toBe(true);
           if (res.body.length > 0) {
+            // TODO: Fix errors
             expect(res.body[0]).toHaveProperty('id');
             expect(res.body[0]).toHaveProperty('student');
             expect(res.body[0]).toHaveProperty('tutor');
@@ -188,7 +189,7 @@ describe('Bookings (e2e)', () => {
   describe('PUT /bookings/:id', () => {
     it('debe actualizar un booking correctamente y retornar 200', async () => {
       // Crear booking
-      const bookingResponse = await request(app.getHttpServer())
+      const bookingResponse = await request(app.getHttpServer()) // TODO: Fix warning
         .post('/bookings')
         .send({
           studentId: testStudentId,
@@ -197,10 +198,10 @@ describe('Bookings (e2e)', () => {
           endTime: '2026-04-01T10:00:00.000Z',
         });
 
-      const bookingId = bookingResponse.body.id;
+      const bookingId = bookingResponse.body.id; // TODO: Fix error
 
       // Actualizar booking
-      return request(app.getHttpServer())
+      return request(app.getHttpServer()) // TODO: Fix warning
         .put(`/bookings/${bookingId}`)
         .send({
           status: 'confirmed',
@@ -213,8 +214,8 @@ describe('Bookings (e2e)', () => {
 
     it('debe retornar 404 al intentar actualizar un booking inexistente', () => {
       const nonExistentId = '00000000-0000-0000-0000-000000000000';
-      
-      return request(app.getHttpServer())
+
+      return request(app.getHttpServer()) // TODO: Fix warning
         .put(`/bookings/${nonExistentId}`)
         .send({ status: 'confirmed' })
         .expect(404);
@@ -224,7 +225,7 @@ describe('Bookings (e2e)', () => {
   describe('DELETE /bookings/:id', () => {
     it('debe eliminar un booking correctamente y retornar 204', async () => {
       // Crear booking
-      const bookingResponse = await request(app.getHttpServer())
+      const bookingResponse = await request(app.getHttpServer()) // TODO: Fix warning
         .post('/bookings')
         .send({
           studentId: testStudentId,
@@ -232,23 +233,23 @@ describe('Bookings (e2e)', () => {
           startTime: '2026-05-01T16:00:00.000Z',
         });
 
-      const bookingId = bookingResponse.body.id;
+      const bookingId = bookingResponse.body.id; // TODO: Fix error
 
       // Eliminar booking
-      await request(app.getHttpServer())
+      await request(app.getHttpServer()) // TODO: Fix warning
         .delete(`/bookings/${bookingId}`)
         .expect(204);
 
       // Verificar que ya no existe
-      return request(app.getHttpServer())
+      return request(app.getHttpServer()) // TODO: Fix warning
         .get(`/bookings/${bookingId}`)
         .expect(404);
     });
 
     it('debe retornar 404 al intentar eliminar un booking inexistente', () => {
       const nonExistentId = '00000000-0000-0000-0000-000000000000';
-      
-      return request(app.getHttpServer())
+
+      return request(app.getHttpServer()) // TODO: Fix warning
         .delete(`/bookings/${nonExistentId}`)
         .expect(404);
     });

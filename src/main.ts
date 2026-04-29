@@ -10,27 +10,36 @@ async function bootstrap() {
   // Disable built-in body parser so we can control it per-route
   const app = await NestFactory.create(AppModule, { bodyParser: false });
 
-  // Servir archivos estáticos desde uploads/
+  app.enableCors({
+    origin: true,
+    credentials: true,
+    methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'ngrok-skip-browser-warning'],
+  });
+
+  app.setGlobalPrefix('api');
+
+  // Serve static files from uploads/
   const uploadsDir = join(process.cwd(), 'uploads');
   if (!existsSync(uploadsDir)) mkdirSync(uploadsDir, { recursive: true });
   app.use('/uploads', express.static(uploadsDir));
 
   // Raw body for Clerk webhook signature verification (must come first)
-  app.use('/webhooks/clerk', express.raw({ type: 'application/json' }));
+  app.use('/api/webhooks/clerk', express.raw({ type: 'application/json' }));
 
   // Standard body parsers for all other routes
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
 
-  // Filtro global de excepciones
+  // Global exception filter
   app.useGlobalFilters(new HttpExceptionFilter());
 
-  // Validación automática de DTOs
+  // Automatic DTOs validation
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist: true, // Elimina propiedades no definidas en el DTO
-      forbidNonWhitelisted: true, // Lanza error si hay propiedades extras
-      transform: true, // Transforma los payloads a instancias de DTO
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
       transformOptions: {
         enableImplicitConversion: true,
       },
@@ -46,6 +55,37 @@ async function bootstrap() {
       },
     }),
   );
+
+  const allowedOrigins = [
+    'http://localhost:8081',
+    'http://localhost:8082',
+    'http://localhost:19000',
+    'http://localhost:19006',
+    ...(process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : []),
+  ];
+
+  app.enableCors({
+    origin: (origin, callback) => {
+      // Allow requests with no origin (Postman, mobile apps, server-to-server)
+      if (!origin) return callback(null, true);
+      if (
+        allowedOrigins.includes(origin) ||
+        /\.ngrok(-free)?\.(app|io|dev)$/.test(origin)
+      ) {
+        return callback(null, true);
+      }
+      callback(new Error(`CORS: origin ${origin} not allowed`));
+    },
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'ngrok-skip-browser-warning',
+    ],
+    credentials: true,
+  });
+
+  app.setGlobalPrefix('api');
 
   await app.listen(process.env.PORT || 3000);
 }

@@ -1,23 +1,44 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { Expose } from 'class-transformer';
-import { IsOptional, IsString, IsEmail, IsIn } from 'class-validator';
+import { IsOptional, IsString, IsArray, MaxLength } from 'class-validator';
 
+/**
+ * Data transfer object for partially updating a user's own profile.
+ * Only the fields a user may self-update are exposed here.
+ */
 export class UpdateUserDto {
-  @ApiPropertyOptional({ example: 'María López' })
+  @ApiPropertyOptional()
   @IsOptional()
   @IsString()
-  @Expose()
-  name?: string;
+  @MaxLength(100)
+  firstName?: string;
 
-  @ApiPropertyOptional({ example: 'maria@example.com' })
+  @ApiPropertyOptional()
   @IsOptional()
-  @IsEmail()
-  @Expose()
-  email?: string;
+  @IsString()
+  @MaxLength(100)
+  lastName?: string;
 
-  @ApiPropertyOptional({ example: 'tutor', enum: ['student', 'tutor'] })
+  @ApiPropertyOptional()
   @IsOptional()
-  @IsIn(['student', 'tutor'])
-  @Expose()
-  role?: 'student' | 'tutor';
+  @IsString()
+  @MaxLength(150)
+  city?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  organizationName?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  academicProgram?: string;
+
+  @ApiPropertyOptional({ type: [String] })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  interests?: string[];
 }

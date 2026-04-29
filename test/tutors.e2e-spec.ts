@@ -14,7 +14,7 @@ describe('Tutors (e2e)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
-    
+
     app.useGlobalFilters(new HttpExceptionFilter());
     app.useGlobalPipes(
       new ValidationPipe({
@@ -26,16 +26,15 @@ describe('Tutors (e2e)', () => {
 
     await app.init();
 
-    // Crear un usuario tutor para las pruebas
-    const userResponse = await request(app.getHttpServer())
+    const userResponse = await request(app.getHttpServer()) // TODO: Fix warning
       .post('/users')
       .send({
         name: 'Tutor Test',
         email: 'tutor.test@example.com',
         role: 'tutor',
       });
-    
-    testUserId = userResponse.body.id;
+
+    testUserId = userResponse.body.id; // TODO: Fix error
   });
 
   afterAll(async () => {
@@ -44,7 +43,7 @@ describe('Tutors (e2e)', () => {
 
   describe('POST /tutors', () => {
     it('debe crear un perfil de tutor correctamente y retornar 201', () => {
-      return request(app.getHttpServer())
+      return request(app.getHttpServer()) // TODO: Fix warning
         .post('/tutors')
         .send({
           userId: testUserId,
@@ -55,19 +54,27 @@ describe('Tutors (e2e)', () => {
         .expect(201)
         .expect((res) => {
           expect(res.body).toHaveProperty('id');
-          expect(res.body).toHaveProperty('bio', 'Ingeniero de software con 5 años de experiencia');
+          expect(res.body).toHaveProperty(
+            'bio',
+            'Ingeniero de software con 5 años de experiencia',
+          );
           expect(res.body).toHaveProperty('subjects');
-          expect(res.body.subjects).toEqual(['JavaScript', 'TypeScript', 'Node.js']);
+          expect(res.body.subjects).toEqual([
+            // TODO: Fix error
+            'JavaScript',
+            'TypeScript',
+            'Node.js',
+          ]);
           expect(res.body).toHaveProperty('experienceYears', 5);
           expect(res.body).toHaveProperty('user');
-          expect(res.body.user).toHaveProperty('id', testUserId);
+          expect(res.body.user).toHaveProperty('id', testUserId); // TODO: Fix error
         });
     });
 
     it('debe fallar si el userId no existe (404)', () => {
       const nonExistentUserId = '00000000-0000-0000-0000-000000000000';
-      
-      return request(app.getHttpServer())
+
+      return request(app.getHttpServer()) // TODO: Fix warning
         .post('/tutors')
         .send({
           userId: nonExistentUserId,
@@ -82,7 +89,7 @@ describe('Tutors (e2e)', () => {
     });
 
     it('debe fallar si el userId no es un UUID válido (400)', () => {
-      return request(app.getHttpServer())
+      return request(app.getHttpServer()) // TODO: Fix warning
         .post('/tutors')
         .send({
           userId: 'invalid-uuid',
@@ -94,8 +101,7 @@ describe('Tutors (e2e)', () => {
 
   describe('GET /tutors/:id', () => {
     it('debe obtener un tutor por ID correctamente y retornar 200', async () => {
-      // Crear usuario y tutor
-      const userResponse = await request(app.getHttpServer())
+      const userResponse = await request(app.getHttpServer()) // TODO: Fix warning
         .post('/users')
         .send({
           name: 'Get Tutor Test',
@@ -106,16 +112,15 @@ describe('Tutors (e2e)', () => {
       const tutorResponse = await request(app.getHttpServer())
         .post('/tutors')
         .send({
-          userId: userResponse.body.id,
+          userId: userResponse.body.id, // TODO: Fix error
           bio: 'Experto en matemáticas',
           subjects: ['Matemáticas', 'Física'],
           experienceYears: 10,
         });
 
-      const tutorId = tutorResponse.body.id;
+      const tutorId = tutorResponse.body.id; // TODO: Fix error
 
-      // Obtener el tutor
-      return request(app.getHttpServer())
+      return request(app.getHttpServer()) // TODO: Fix warning
         .get(`/tutors/${tutorId}`)
         .expect(200)
         .expect((res) => {
@@ -123,14 +128,14 @@ describe('Tutors (e2e)', () => {
           expect(res.body).toHaveProperty('bio', 'Experto en matemáticas');
           expect(res.body).toHaveProperty('experienceYears', 10);
           expect(res.body).toHaveProperty('user');
-          expect(res.body.user.name).toBe('Get Tutor Test');
+          expect(res.body.user.name).toBe('Get Tutor Test'); // TODO: Fix error
         });
     });
 
     it('debe retornar 404 si el tutor no existe', () => {
       const nonExistentId = '00000000-0000-0000-0000-000000000000';
-      
-      return request(app.getHttpServer())
+
+      return request(app.getHttpServer()) // TODO: Fix warning
         .get(`/tutors/${nonExistentId}`)
         .expect(404)
         .expect((res) => {
@@ -141,7 +146,7 @@ describe('Tutors (e2e)', () => {
 
   describe('GET /tutors', () => {
     it('debe obtener todos los tutores y retornar 200', () => {
-      return request(app.getHttpServer())
+      return request(app.getHttpServer()) // TODO: Fix warning
         .get('/tutors')
         .expect(200)
         .expect((res) => {
@@ -156,8 +161,7 @@ describe('Tutors (e2e)', () => {
 
   describe('PUT /tutors/:id', () => {
     it('debe actualizar un tutor correctamente y retornar 200', async () => {
-      // Crear usuario y tutor
-      const userResponse = await request(app.getHttpServer())
+      const userResponse = await request(app.getHttpServer()) // TODO: Fix warning
         .post('/users')
         .send({
           name: 'Update Tutor Test',
@@ -165,18 +169,18 @@ describe('Tutors (e2e)', () => {
           role: 'tutor',
         });
 
-      const tutorResponse = await request(app.getHttpServer())
+      const tutorResponse = await request(app.getHttpServer()) // TODO: Fix warning
         .post('/tutors')
         .send({
-          userId: userResponse.body.id,
+          userId: userResponse.body.id, // TODO: Fix error
           bio: 'Bio original',
           experienceYears: 2,
         });
 
-      const tutorId = tutorResponse.body.id;
+      const tutorId = tutorResponse.body.id; // TODO: Fix error
 
       // Actualizar tutor
-      return request(app.getHttpServer())
+      return request(app.getHttpServer()) // TODO: Fix warning
         .put(`/tutors/${tutorId}`)
         .send({
           bio: 'Bio actualizada',
@@ -191,8 +195,8 @@ describe('Tutors (e2e)', () => {
 
     it('debe retornar 404 al intentar actualizar un tutor inexistente', () => {
       const nonExistentId = '00000000-0000-0000-0000-000000000000';
-      
-      return request(app.getHttpServer())
+
+      return request(app.getHttpServer()) // TODO: Fix warning
         .put(`/tutors/${nonExistentId}`)
         .send({ bio: 'Nueva bio' })
         .expect(404);
@@ -201,8 +205,7 @@ describe('Tutors (e2e)', () => {
 
   describe('DELETE /tutors/:id', () => {
     it('debe eliminar un tutor correctamente y retornar 204', async () => {
-      // Crear usuario y tutor
-      const userResponse = await request(app.getHttpServer())
+      const userResponse = await request(app.getHttpServer()) // TODO: Fix warning
         .post('/users')
         .send({
           name: 'Delete Tutor Test',
@@ -210,30 +213,26 @@ describe('Tutors (e2e)', () => {
           role: 'tutor',
         });
 
-      const tutorResponse = await request(app.getHttpServer())
+      const tutorResponse = await request(app.getHttpServer()) // TODO: Fix warning
         .post('/tutors')
         .send({
-          userId: userResponse.body.id,
+          userId: userResponse.body.id, // TODO: Fix error
           bio: 'Bio test',
         });
 
-      const tutorId = tutorResponse.body.id;
+      const tutorId = tutorResponse.body.id; // TODO: Fix error
 
-      // Eliminar tutor
-      await request(app.getHttpServer())
+      await request(app.getHttpServer()) // TODO: Fix warning
         .delete(`/tutors/${tutorId}`)
         .expect(204);
 
-      // Verificar que ya no existe
-      return request(app.getHttpServer())
-        .get(`/tutors/${tutorId}`)
-        .expect(404);
+      return request(app.getHttpServer()).get(`/tutors/${tutorId}`).expect(404); // TODO: Fix warning
     });
 
     it('debe retornar 404 al intentar eliminar un tutor inexistente', () => {
       const nonExistentId = '00000000-0000-0000-0000-000000000000';
-      
-      return request(app.getHttpServer())
+
+      return request(app.getHttpServer()) // TODO: Fix warning
         .delete(`/tutors/${nonExistentId}`)
         .expect(404);
     });
