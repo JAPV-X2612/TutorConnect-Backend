@@ -10,22 +10,27 @@ applies_to: [all modules]
 ## SOLID Applied to This Project
 
 ### Single Responsibility
+
 - Each NestJS service method handles one business operation.
 - Controllers only validate input and delegate to services. Zero business logic in controllers.
 - Entity ≠ DTO — they are always separate classes. Never expose entities directly in API responses.
 
 ### Open/Closed
+
 - New business behavior → new service method or new service class. Avoid modifying existing methods unnecessarily.
 - Extend functionality through new DTOs and new endpoints rather than adding flags to existing ones.
 
 ### Liskov Substitution
+
 - Any mock repository used in tests must be substitutable for the real TypeORM repository.
 
 ### Interface Segregation
+
 - DTOs define only what each endpoint needs — no fat request/response objects that mix concerns.
 - If two endpoints need different subsets of data, define two separate DTOs.
 
 ### Dependency Inversion
+
 - Services depend on TypeORM repositories injected via NestJS DI, not on concrete implementations.
 - Never import module-specific entities directly in other modules — use `TypeOrmModule.forFeature([Entity])`.
 
@@ -34,16 +39,19 @@ applies_to: [all modules]
 ## Naming Rules
 
 **Methods:**
+
 - Express intent: `findBookingById`, not `get`, `fetch`, or `retrieve`.
 - Boolean methods: `isAvailable()`, `canBeCancelled()`, `hasCompletedSessions()`.
 - Avoid: `handleData`, `processInfo`, `doStuff`.
 
 **Variables:**
+
 - Avoid single letters except loop indices (`i`, `j`).
 - Avoid generic names: `data`, `result`, `item`, `temp`, `obj`, `response`.
 - Arrays/collections → plural noun: `bookings`, `tutors`, `sessionIds`.
 
 **Classes:**
+
 - Service: `BookingService`, `DashboardService`.
 - Entity: `BookingEntity`, `UserEntity`.
 - DTO: `CreateBookingDto`, `TutorDashboardDto`.
@@ -83,11 +91,13 @@ async getBooking(id: string, clerkId: string) {
 ## Comment Rules
 
 Write a comment ONLY when the WHY is non-obvious:
+
 - A hidden constraint (e.g., Clerk JWT TTL is 60s — the SDK rotates automatically)
 - A subtle invariant (e.g., `synchronize: true` is forbidden outside local)
 - A workaround for a known external bug
 
 **Never write:**
+
 ```typescript
 // Get booking by id         ← explains WHAT (obvious)
 // Loop through each item    ← explains WHAT (obvious)

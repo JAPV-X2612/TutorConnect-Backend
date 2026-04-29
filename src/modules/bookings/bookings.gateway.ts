@@ -44,7 +44,9 @@ export class BookingsGateway
 
   /** Notify a specific learner that one of their bookings changed. */
   notifyLearner(learnerClerkId: string, booking: object) {
-    this.server.to(`learner:${learnerClerkId}`).emit('booking:updated', booking);
+    this.server
+      .to(`learner:${learnerClerkId}`)
+      .emit('booking:updated', booking);
   }
 
   /** Notify a specific tutor that a new booking arrived or was cancelled. */

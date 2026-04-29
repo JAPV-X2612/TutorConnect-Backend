@@ -1,47 +1,45 @@
-# Tareas Pendientes de Infraestructura AWS — HU-02
+# Pending AWS Infrastructure Tasks
 
-Estas tareas requieren una cuenta AWS real y no pueden automatizarse en código.
+These tasks require a real AWS account and cannot be automated in code.
 
-## S3 — Bucket de certificaciones
+## S3 — Certifications bucket
 
-- [ ] Crear bucket: `tutorconnect-certificaciones` (región: p.ej. `us-east-1`)
-- [ ] Bloquear todo acceso público (**Block Public Access: ON**)
-- [ ] Habilitar **versionado** del bucket
-- [ ] Configurar política de ciclo de vida: mover objetos a **S3 Glacier** después de **365 días**
+- [ ] Create bucket: `tutorconnect-certificaciones` (region: `us-east-1`)
+- [ ] Enable **Block Public Access** (all options ON)
+- [ ] Enable bucket **versioning**
+- [ ] Configure lifecycle rule: move objects to **S3 Glacier** after **365 days**
 
-## IAM — Permisos para la aplicación
+## IAM — Application permissions
 
-- [ ] Crear usuario IAM (o role para ECS/EC2) con los siguientes permisos sobre el bucket:
+- [ ] Create IAM user (or ECS task role) with the following permissions on the bucket:
   - `s3:PutObject`
   - `s3:GetObject`
   - `s3:DeleteObject`
   - `s3:ListBucket`
-- [ ] Guardar el **Access Key ID** y **Secret Access Key** generados de forma segura
+- [ ] Store the generated **Access Key ID** and **Secret Access Key** securely
 
 ## AWS Systems Manager — Parameter Store
 
-Registrar los siguientes parámetros (tipo `SecureString` para credenciales):
+Register the following parameters (type `SecureString` for credentials):
 
-| Parámetro | Variable en contenedor | Valor |
-|---|---|---|
-| `/tutorconnect/s3-bucket-name` | `S3_BUCKET_NAME` | `tutorconnect-certificaciones` |
-| `/tutorconnect/s3-region` | `S3_REGION` | `us-east-1` (o la región elegida) |
-| `/tutorconnect/aws-access-key-id` | `AWS_ACCESS_KEY_ID` | *(generado en paso IAM)* |
-| `/tutorconnect/aws-secret-access-key` | `AWS_SECRET_ACCESS_KEY` | *(generado en paso IAM)* |
+| Parameter                             | Container env var       | Value                          |
+| ------------------------------------- | ----------------------- | ------------------------------ |
+| `/tutorconnect/s3-bucket-name`        | `S3_BUCKET_NAME`        | `tutorconnect-certificaciones` |
+| `/tutorconnect/s3-region`             | `S3_REGION`             | `us-east-1`                    |
+| `/tutorconnect/aws-access-key-id`     | `AWS_ACCESS_KEY_ID`     | _(from IAM step)_              |
+| `/tutorconnect/aws-secret-access-key` | `AWS_SECRET_ACCESS_KEY` | _(from IAM step)_              |
 
-## StorageService — Integración S3 real
+## StorageService — Real S3 integration
 
-Una vez el bucket exista, reemplazar `src/storage/storage.service.ts` con implementación real usando el SDK de AWS:
-
-```bash
-npm install @aws-sdk/client-s3 @aws-sdk/s3-request-presigner
-```
+Once the bucket exists, update `src/storage/storage.service.ts` with the real implementation:
 
 - `uploadFile(key, buffer, mimeType)` → `PutObjectCommand`
-- `getPresignedUrl(key, expiresInSeconds)` → `getSignedUrl` con `GetObjectCommand`
-- Leer variables de entorno: `S3_BUCKET_NAME`, `S3_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`
+- `getPresignedUrl(key, expiresInSeconds)` → `getSignedUrl` + `GetObjectCommand`
+- Read from env: `S3_BUCKET_NAME`, `S3_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`
 
-## Variables de entorno a añadir en `.env`
+Required packages are already installed: `@aws-sdk/client-s3`, `@aws-sdk/s3-request-presigner`.
+
+## Environment variables to add to `.env`
 
 ```env
 S3_BUCKET_NAME=tutorconnect-certificaciones

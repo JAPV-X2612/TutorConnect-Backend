@@ -21,13 +21,13 @@ main              ← production-ready code only
 
 **Branch naming:** `<type>/<short-description-in-kebab-case>`
 
-| Type | When |
-|---|---|
-| `feature/` | New functionality from a user story |
-| `fix/` | Bug fix |
-| `chore/` | Tooling, dependencies, config |
-| `docs/` | Documentation only |
-| `test/` | Tests only |
+| Type        | When                                     |
+| ----------- | ---------------------------------------- |
+| `feature/`  | New functionality from a user story      |
+| `fix/`      | Bug fix                                  |
+| `chore/`    | Tooling, dependencies, config            |
+| `docs/`     | Documentation only                       |
+| `test/`     | Tests only                               |
 | `refactor/` | Code improvement with no behavior change |
 
 ---
@@ -44,16 +44,16 @@ Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
 
 ### Types
 
-| Type | Use for |
-|---|---|
-| `feat` | New feature |
-| `fix` | Bug fix |
-| `test` | Adding or correcting tests |
+| Type       | Use for                             |
+| ---------- | ----------------------------------- |
+| `feat`     | New feature                         |
+| `fix`      | Bug fix                             |
+| `test`     | Adding or correcting tests          |
 | `refactor` | Code change with no behavior change |
-| `docs` | Documentation changes |
-| `chore` | Build, tooling, dependency updates |
-| `ci` | CI/CD pipeline changes |
-| `perf` | Performance improvement |
+| `docs`     | Documentation changes               |
+| `chore`    | Build, tooling, dependency updates  |
+| `ci`       | CI/CD pipeline changes              |
+| `perf`     | Performance improvement             |
 
 ### Scopes (for this project)
 
@@ -86,10 +86,12 @@ feat(search): integrate Pinecone vector search for AI-powered tutor lookup
 
 ```markdown
 ## Summary
+
 - What changed and why (2-3 bullet points)
 - Reference to User Story: HU-XX
 
 ## Test plan
+
 - [ ] Unit tests pass (`npm run test`)
 - [ ] Coverage ≥ 80% (`npm run test:cov`)
 - [ ] TypeScript compiles without errors (`npm run build`)
@@ -98,6 +100,7 @@ feat(search): integrate Pinecone vector search for AI-powered tutor lookup
 - [ ] Docker Compose local environment runs correctly
 
 ## Notes
+
 - [ ] `.env.example` updated if new environment variables were added
 - [ ] TypeORM migration generated and applied if schema changed
 ```

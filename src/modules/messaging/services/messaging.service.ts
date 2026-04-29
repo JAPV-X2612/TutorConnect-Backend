@@ -31,7 +31,12 @@ export interface ChannelResponse {
   id: number;
   isActive: boolean;
   expiresAt: string | null;
-  otherUser: { id: number; clerkId: string; firstName: string; lastName: string };
+  otherUser: {
+    id: number;
+    clerkId: string;
+    firstName: string;
+    lastName: string;
+  };
   course: CourseInfo | null;
   booking: BookingInfo | null;
   lastMessage: { content: string; sentAt: Date; fromMe: boolean } | null;
@@ -79,30 +84,47 @@ export class MessagingService {
     otherClerkId: string,
     courseId?: string,
   ): Promise<ChannelResponse> {
-    const caller = await this.usersDB.repository.findOne({ where: { clerkId: callerClerkId } });
+    const caller = await this.usersDB.repository.findOne({
+      where: { clerkId: callerClerkId },
+    });
     if (!caller) throw new NotFoundException('User not found');
 
-    const other = await this.usersDB.repository.findOne({ where: { clerkId: otherClerkId } });
+    const other = await this.usersDB.repository.findOne({
+      where: { clerkId: otherClerkId },
+    });
     if (!other) throw new NotFoundException('Other user not found');
 
     const isTutor = (u: typeof caller) => u.role === UserRole.TUTOR;
-    const [tutor, learner] = isTutor(caller) ? [caller, other] : [other, caller];
+    const [tutor, learner] = isTutor(caller)
+      ? [caller, other]
+      : [other, caller];
 
     const course = courseId
       ? await this.courseRepo.findOne({ where: { id: courseId } })
       : null;
 
-    const activeBooking = await this.messagingDB.findActiveBookingForParticipants(
-      tutor.clerkId,
-      learner.clerkId,
-    );
+    const activeBooking =
+      await this.messagingDB.findActiveBookingForParticipants(
+        tutor.clerkId,
+        learner.clerkId,
+      );
     const shouldExpire = !activeBooking;
 
-    let channel = await this.messagingDB.findChannelByParticipants(tutor.id, learner.id);
+    let channel = await this.messagingDB.findChannelByParticipants(
+      tutor.id,
+      learner.id,
+    );
 
     if (!channel) {
-      const expiresAt = shouldExpire ? new Date(Date.now() + CHAT_EXPIRY_MS) : null;
-      channel = await this.messagingDB.createChannel(tutor, learner, course, expiresAt);
+      const expiresAt = shouldExpire
+        ? new Date(Date.now() + CHAT_EXPIRY_MS)
+        : null;
+      channel = await this.messagingDB.createChannel(
+        tutor,
+        learner,
+        course,
+        expiresAt,
+      );
       this.logger.log(
         `Channel ${channel.id} created tutor=${tutor.clerkId} learner=${learner.clerkId} expiresAt=${expiresAt}`,
       );
@@ -113,14 +135,20 @@ export class MessagingService {
     }
 
     const bookingInfo: BookingInfo | null = activeBooking
-      ? { id: activeBooking.id, status: activeBooking.status, startTime: activeBooking.startTime.toISOString() }
+      ? {
+          id: activeBooking.id,
+          status: activeBooking.status,
+          startTime: activeBooking.startTime.toISOString(),
+        }
       : null;
 
     return this.formatChannel(channel, callerClerkId, bookingInfo);
   }
 
   async listChannels(callerClerkId: string): Promise<ChannelResponse[]> {
-    const caller = await this.usersDB.repository.findOne({ where: { clerkId: callerClerkId } });
+    const caller = await this.usersDB.repository.findOne({
+      where: { clerkId: callerClerkId },
+    });
     if (!caller) throw new NotFoundException('User not found');
 
     const channels = await this.messagingDB.findChannelsByUser(caller.id);
@@ -132,7 +160,11 @@ export class MessagingService {
           ch.learner.clerkId,
         );
         const bookingInfo: BookingInfo | null = booking
-          ? { id: booking.id, status: booking.status, startTime: booking.startTime.toISOString() }
+          ? {
+              id: booking.id,
+              status: booking.status,
+              startTime: booking.startTime.toISOString(),
+            }
           : null;
         return this.formatChannel(ch, callerClerkId, bookingInfo);
       }),
@@ -149,13 +181,21 @@ export class MessagingService {
     if (!channel) throw new NotFoundException('Channel not found');
     this.assertParticipant(channel, callerClerkId);
 
-    const messages = await this.messagingDB.findMessagesByChannel(channelId, limit, offset);
+    const messages = await this.messagingDB.findMessagesByChannel(
+      channelId,
+      limit,
+      offset,
+    );
     return messages.map((m) => ({
       id: m.id,
       content: m.content,
       sentAt: m.sentAt,
       fromMe: m.sender.clerkId === callerClerkId,
-      sender: { id: m.sender.id, firstName: m.sender.firstName, lastName: m.sender.lastName },
+      sender: {
+        id: m.sender.id,
+        firstName: m.sender.firstName,
+        lastName: m.sender.lastName,
+      },
     }));
   }
 
@@ -166,22 +206,35 @@ export class MessagingService {
   ): Promise<MessageResponse> {
     const channel = await this.messagingDB.findChannelById(channelId);
     if (!channel) throw new NotFoundException('Channel not found');
-    if (!channel.isActive) throw new ForbiddenException('This channel is no longer active');
+    if (!channel.isActive)
+      throw new ForbiddenException('This channel is no longer active');
     if (channel.expiresAt && channel.expiresAt < new Date()) {
-      throw new ForbiddenException('Este chat ha expirado. Reserva una sesión para continuar.');
+      throw new ForbiddenException(
+        'Este chat ha expirado. Reserva una sesión para continuar.',
+      );
     }
     this.assertParticipant(channel, senderClerkId);
 
-    const sender = await this.usersDB.repository.findOne({ where: { clerkId: senderClerkId } });
+    const sender = await this.usersDB.repository.findOne({
+      where: { clerkId: senderClerkId },
+    });
     if (!sender) throw new NotFoundException('Sender not found');
 
-    const message = await this.messagingDB.createMessage(channel, sender, content);
+    const message = await this.messagingDB.createMessage(
+      channel,
+      sender,
+      content,
+    );
     return {
       id: message.id,
       content: message.content,
       sentAt: message.sentAt,
       fromMe: true,
-      sender: { id: sender.id, firstName: sender.firstName, lastName: sender.lastName },
+      sender: {
+        id: sender.id,
+        firstName: sender.firstName,
+        lastName: sender.lastName,
+      },
     };
   }
 
@@ -190,9 +243,12 @@ export class MessagingService {
     const channel = await this.messagingDB.findChannelById(channelId);
     if (!channel) throw new NotFoundException('Channel not found');
     this.assertParticipant(channel, clerkId);
-    if (!channel.isActive) throw new ForbiddenException('Este canal ya no está activo');
+    if (!channel.isActive)
+      throw new ForbiddenException('Este canal ya no está activo');
     if (channel.expiresAt && channel.expiresAt < new Date()) {
-      throw new ForbiddenException('Este chat ha expirado. Reserva una sesión para continuar.');
+      throw new ForbiddenException(
+        'Este chat ha expirado. Reserva una sesión para continuar.',
+      );
     }
   }
 
@@ -203,13 +259,18 @@ export class MessagingService {
     clerkId: string,
   ) {
     if (!channel) throw new NotFoundException('Channel not found');
-    if (channel.tutor.clerkId !== clerkId && channel.learner.clerkId !== clerkId) {
+    if (
+      channel.tutor.clerkId !== clerkId &&
+      channel.learner.clerkId !== clerkId
+    ) {
       throw new ForbiddenException('Access denied to this channel');
     }
   }
 
   private formatChannel(
-    channel: NonNullable<Awaited<ReturnType<MessagingDBService['findChannelById']>>>,
+    channel: NonNullable<
+      Awaited<ReturnType<MessagingDBService['findChannelById']>>
+    >,
     callerClerkId: string,
     bookingInfo: BookingInfo | null,
   ): ChannelResponse {

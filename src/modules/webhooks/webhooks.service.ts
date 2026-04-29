@@ -106,8 +106,7 @@ export class WebhooksService {
     const lastName = data.last_name ?? '';
 
     const rawRole = data.unsafe_metadata?.role?.toUpperCase();
-    const role =
-      rawRole === UserRole.TUTOR ? UserRole.TUTOR : UserRole.LEARNER;
+    const role = rawRole === UserRole.TUTOR ? UserRole.TUTOR : UserRole.LEARNER;
 
     this.logger.log(
       `[user.created] clerk_id=${clerkId} | email=${primaryEmail} | ` +
@@ -149,7 +148,9 @@ export class WebhooksService {
     );
   }
 
-  private async syncRoleFromMetadata(data: ClerkUserCreatedData): Promise<void> {
+  private async syncRoleFromMetadata(
+    data: ClerkUserCreatedData,
+  ): Promise<void> {
     const rawRole = data.unsafe_metadata?.role?.toUpperCase();
 
     this.logger.debug(
@@ -158,7 +159,9 @@ export class WebhooksService {
 
     if (rawRole !== UserRole.TUTOR) return;
 
-    const user = await this.userRepository.findOne({ where: { clerkId: data.id } });
+    const user = await this.userRepository.findOne({
+      where: { clerkId: data.id },
+    });
     if (!user) {
       this.logger.warn(
         `[user.updated] No platform profile found for clerk_id=${data.id} — skipping role sync`,

@@ -1,0 +1,10 @@
+dist/
+node_modules/
+coverage/
+build/
+uploads/
+*.js
+*.d.ts
+**/*.spec.ts
+jest.config.*
+eslint.config.*

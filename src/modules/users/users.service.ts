@@ -118,14 +118,20 @@ export class UsersService {
     const user = await this.findOne(id);
     if (dto.firstName !== undefined) user.firstName = dto.firstName;
     if (dto.lastName !== undefined) user.lastName = dto.lastName;
-    if (dto.city !== undefined) user.city = dto.city ? dto.city.toUpperCase() : null;
-    if (dto.organizationName !== undefined) user.organizationName = dto.organizationName || null;
-    if (dto.academicProgram !== undefined) user.academicProgram = dto.academicProgram || null;
+    if (dto.city !== undefined)
+      user.city = dto.city ? dto.city.toUpperCase() : null;
+    if (dto.organizationName !== undefined)
+      user.organizationName = dto.organizationName || null;
+    if (dto.academicProgram !== undefined)
+      user.academicProgram = dto.academicProgram || null;
     if (dto.interests !== undefined) user.interests = dto.interests;
     return this.usersDBService.repository.save(user);
   }
 
-  async updateByClerkId(clerkId: string, dto: UpdateUserDto): Promise<UserEntity> {
+  async updateByClerkId(
+    clerkId: string,
+    dto: UpdateUserDto,
+  ): Promise<UserEntity> {
     const user = await this.findByClerkId(clerkId);
     if (!user) throw new NotFoundException('User not found');
     return this.update(user.id, dto);

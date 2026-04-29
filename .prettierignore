@@ -1,0 +1,8 @@
+dist/
+node_modules/
+coverage/
+build/
+uploads/
+*.js
+*.d.ts
+package-lock.json

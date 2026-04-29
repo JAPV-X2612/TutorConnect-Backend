@@ -8,25 +8,25 @@
 
 **TutorConnect** is an on-demand tutoring and skills marketplace with a commission-per-completed-session business model. It connects learners with verified tutors in academic subjects and practical skills (programming, cooking, mechanics, languages, etc.).
 
-| Attribute | Value |
-|---|---|
-| **Target market** | University students in Colombia |
-| **Business model** | Commission per completed session |
-| **Course** | Innovación y Emprendimiento con TI (IETI) |
-| **University** | Escuela Colombiana de Ingeniería Julio Garavito |
+| Attribute          | Value                                             |
+| ------------------ | ------------------------------------------------- |
+| **Target market**  | University students in Colombia                   |
+| **Business model** | Commission per completed session                  |
+| **Course**         | Innovación y Emprendimiento con TI (IETI)         |
+| **University**     | Escuela Colombiana de Ingeniería Julio Garavito   |
 | **Technical goal** | 100+ concurrent users with real-time capabilities |
 
 ---
 
 ## 👥 Development Team
 
-| Name | GitHub |
-|---|---|
+| Name                             | GitHub                                                 |
+| -------------------------------- | ------------------------------------------------------ |
 | Camilo Andrés Quintero Rodríguez | [@CamiloQuinteroR](https://github.com/CamiloQuinteroR) |
-| Jesús Alfonso Pinzón Vega | [@JAPV-X2612](https://github.com/JAPV-X2612) |
-| Laura Daniela Rodríguez Sánchez | [@LauraRo166](https://github.com/LauraRo166) |
-| Santiago Díaz Rojas | [@buba-0511](https://github.com/buba-0511) |
-| Sergio Andrés Bejarano Rodríguez | [@SergioBejarano](https://github.com/SergioBejarano) |
+| Jesús Alfonso Pinzón Vega        | [@JAPV-X2612](https://github.com/JAPV-X2612)           |
+| Laura Daniela Rodríguez Sánchez  | [@LauraRo166](https://github.com/LauraRo166)           |
+| Santiago Díaz Rojas              | [@buba-0511](https://github.com/buba-0511)             |
+| Sergio Andrés Bejarano Rodríguez | [@SergioBejarano](https://github.com/SergioBejarano)   |
 
 ---
 
@@ -48,20 +48,20 @@
 
 ## 📦 System Modules
 
-| ID | Module | Path | Responsibility |
-|---|---|---|---|
-| MOD-AUT-001 | `AuthModule` | `src/modules/auth` | JWT validation (ClerkJwtGuard), role-based access control (RoleGuard) |
-| MOD-USR-002 | `UsersModule` | `src/modules/users` | User profiles, CRUD, learner preferences |
-| MOD-BUS-003 | `SearchModule` | `src/modules/search` | AI-powered tutor search (Pinecone + Claude API) |
-| MOD-RES-004 | `BookingsModule` | `src/modules/bookings` | Session booking lifecycle, real-time updates via WebSocket |
-| MOD-MSG-005 | `MessagingModule` | `src/modules/messaging` | Chat channels, message history, Socket.io + Redis pub/sub |
-| MOD-REV-006 | `ReviewsModule` | `src/modules/reviews` | Session reviews and rating aggregation |
-| MOD-LOG-007 | `AuditModule` | `src/modules/audit` | Audit trail logging |
-| — | `TutorsModule` | `src/modules/tutors` | Tutor profiles, courses, certifications, availability |
-| — | `DashboardModule` | `src/modules/dashboard` | Aggregated metrics for tutor and learner dashboards |
-| — | `PaymentsModule` | `src/modules/payments` | Commission-based payment lifecycle |
-| — | `WebhooksModule` | `src/modules/webhooks` | Clerk webhook ingestion (`user.created`, `user.updated`) |
-| — | `HealthModule` | `src/modules/health` | Health check endpoint |
+| ID          | Module            | Path                    | Responsibility                                                        |
+| ----------- | ----------------- | ----------------------- | --------------------------------------------------------------------- |
+| MOD-AUT-001 | `AuthModule`      | `src/modules/auth`      | JWT validation (ClerkJwtGuard), role-based access control (RoleGuard) |
+| MOD-USR-002 | `UsersModule`     | `src/modules/users`     | User profiles, CRUD, learner preferences                              |
+| MOD-BUS-003 | `SearchModule`    | `src/modules/search`    | AI-powered tutor search (Pinecone + Claude API)                       |
+| MOD-RES-004 | `BookingsModule`  | `src/modules/bookings`  | Session booking lifecycle, real-time updates via WebSocket            |
+| MOD-MSG-005 | `MessagingModule` | `src/modules/messaging` | Chat channels, message history, Socket.io + Redis pub/sub             |
+| MOD-REV-006 | `ReviewsModule`   | `src/modules/reviews`   | Session reviews and rating aggregation                                |
+| MOD-LOG-007 | `AuditModule`     | `src/modules/audit`     | Audit trail logging                                                   |
+| —           | `TutorsModule`    | `src/modules/tutors`    | Tutor profiles, courses, certifications, availability                 |
+| —           | `DashboardModule` | `src/modules/dashboard` | Aggregated metrics for tutor and learner dashboards                   |
+| —           | `PaymentsModule`  | `src/modules/payments`  | Commission-based payment lifecycle                                    |
+| —           | `WebhooksModule`  | `src/modules/webhooks`  | Clerk webhook ingestion (`user.created`, `user.updated`)              |
+| —           | `HealthModule`    | `src/modules/health`    | Health check endpoint                                                 |
 
 ---
 
@@ -83,14 +83,14 @@ UserEntity (id: uuid, clerkId: unique+indexed, email, role: TUTOR|LEARNER, statu
 
 ### System Enums
 
-| Enum | Values |
-|---|---|
-| `UserRole` | `TUTOR`, `LEARNER` |
-| `UserStatus` | `ACTIVE`, `INACTIVE` |
-| `BookingStatus` | `PENDING_CONFIRMATION`, `CONFIRMED`, `COMPLETED`, `CANCELLED_BY_LEARNER`, `CANCELLED_BY_TUTOR`, `REJECTED`, `NO_SHOW`, `RESCHEDULED`, `EXPIRED` |
-| `PaymentStatus` | `PENDING`, `PROCESSING`, `COMPLETED`, `FAILED`, `CANCELLED`, `REFUNDED`, `DISPUTED` |
-| `DayOfWeek` | `MONDAY` ... `SUNDAY` |
-| `CertificationFileType` | `PDF`, `IMAGE`, `DOCUMENT` |
+| Enum                    | Values                                                                                                                                          |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `UserRole`              | `TUTOR`, `LEARNER`                                                                                                                              |
+| `UserStatus`            | `ACTIVE`, `INACTIVE`                                                                                                                            |
+| `BookingStatus`         | `PENDING_CONFIRMATION`, `CONFIRMED`, `COMPLETED`, `CANCELLED_BY_LEARNER`, `CANCELLED_BY_TUTOR`, `REJECTED`, `NO_SHOW`, `RESCHEDULED`, `EXPIRED` |
+| `PaymentStatus`         | `PENDING`, `PROCESSING`, `COMPLETED`, `FAILED`, `CANCELLED`, `REFUNDED`, `DISPUTED`                                                             |
+| `DayOfWeek`             | `MONDAY` ... `SUNDAY`                                                                                                                           |
+| `CertificationFileType` | `PDF`, `IMAGE`, `DOCUMENT`                                                                                                                      |
 
 ---
 
@@ -157,13 +157,13 @@ src/
 
 ## 🗃️ Database Conventions
 
-| Element | Convention | Example |
-|---|---|---|
-| Table names | `snake_case`, singular | `booking`, `tutor_topic` |
-| Column names | `snake_case` | `clerk_id`, `start_time` |
-| Enum type names | `snake_case` | `booking_status` |
-| Enum values | `SCREAMING_SNAKE_CASE` | `CONFIRMED`, `PENDING_PAYMENT` |
-| `clerkId` field | Always decorated with `@Index()` | — |
+| Element         | Convention                       | Example                        |
+| --------------- | -------------------------------- | ------------------------------ |
+| Table names     | `snake_case`, singular           | `booking`, `tutor_topic`       |
+| Column names    | `snake_case`                     | `clerk_id`, `start_time`       |
+| Enum type names | `snake_case`                     | `booking_status`               |
+| Enum values     | `SCREAMING_SNAKE_CASE`           | `CONFIRMED`, `PENDING_PAYMENT` |
+| `clerkId` field | Always decorated with `@Index()` | —                              |
 
 ### Migration Commands
 
@@ -183,11 +183,11 @@ npx typeorm migration:run -d src/data-source.ts
 
 AI functionality is **isolated** in the `SearchModule`. Do not add AI logic to any other module.
 
-| Component | Role |
-|---|---|
-| **Pinecone** | Vector database — semantic similarity search over tutor profiles |
+| Component      | Role                                                                            |
+| -------------- | ------------------------------------------------------------------------------- |
+| **Pinecone**   | Vector database — semantic similarity search over tutor profiles                |
 | **Claude API** | Natural language understanding — extracts subjects and intent from user queries |
-| **Redis** | Cache for frequently requested search results |
+| **Redis**      | Cache for frequently requested search results                                   |
 
 **Main endpoint:** `POST /tutors/buscar-ia`
 
@@ -195,9 +195,9 @@ AI functionality is **isolated** in the `SearchModule`. Do not add AI logic to a
 
 ## 🔄 Real-time Features
 
-| Module | Technology | Purpose |
-|---|---|---|
-| `BookingsModule` | WebSocket (Socket.io) | Broadcast booking status changes |
+| Module            | Technology                            | Purpose                                            |
+| ----------------- | ------------------------------------- | -------------------------------------------------- |
+| `BookingsModule`  | WebSocket (Socket.io)                 | Broadcast booking status changes                   |
 | `MessagingModule` | WebSocket (Socket.io) + Redis pub/sub | Real-time message delivery with horizontal scaling |
 
 ---
@@ -216,15 +216,15 @@ AI functionality is **isolated** in the `SearchModule`. Do not add AI logic to a
 
 ## ✅ Quality Standards
 
-| Standard | Value |
-|---|---|
-| `any` type | Forbidden — use explicit types or `unknown` at external boundaries |
-| Response time | < 500 ms under normal load |
-| Minimum test coverage | 80% per service file |
-| Code style | ESLint + Prettier (2 spaces, single quotes, always semicolons) |
-| Logging | NestJS `Logger` — never `console.log` in production code |
-| Principles | SOLID, DRY, KISS, YAGNI |
-| JSDoc | Required on all exported classes and interfaces |
+| Standard              | Value                                                              |
+| --------------------- | ------------------------------------------------------------------ |
+| `any` type            | Forbidden — use explicit types or `unknown` at external boundaries |
+| Response time         | < 500 ms under normal load                                         |
+| Minimum test coverage | 80% per service file                                               |
+| Code style            | ESLint + Prettier (2 spaces, single quotes, always semicolons)     |
+| Logging               | NestJS `Logger` — never `console.log` in production code           |
+| Principles            | SOLID, DRY, KISS, YAGNI                                            |
+| JSDoc                 | Required on all exported classes and interfaces                    |
 
 ---
 
