@@ -10,6 +10,11 @@ import { LearnerPreferenceEntity } from './modules/users/entities/learner-prefer
 import { TutorTopicEntity } from './modules/tutors/entities/tutor-topic.entity';
 import { TutorAvailabilityEntity } from './modules/tutors/entities/tutor-availability.entity';
 import { TutorCertificationEntity } from './modules/tutors/entities/tutor-certification.entity';
+import { TutorCourseEntity } from './modules/tutors/entities/tutor-course.entity';
+import { ChatChannelEntity } from './modules/messaging/entities/chat-channel.entity';
+import { MessageEntity } from './modules/messaging/entities/message.entity';
+import { ReviewEntity } from './modules/reviews/entities/review.entity';
+import { PaymentEntity } from './modules/payments/entities/payment.entity';
 
 function loadEnvFile(filePath: string): void {
   if (!fs.existsSync(filePath)) return;
@@ -54,10 +59,15 @@ export default new DataSource({
     LearnerPreferenceEntity,
     TutorEntity,
     CertificacionEntity,
+    TutorCourseEntity,
     TutorTopicEntity,
     TutorAvailabilityEntity,
     TutorCertificationEntity,
     BookingEntity,
+    ChatChannelEntity,
+    MessageEntity,
+    ReviewEntity,
+    PaymentEntity,
   ],
   migrations: [path.join(__dirname, 'migrations/*{.ts,.js}')],
   synchronize: false,
