@@ -26,7 +26,6 @@
 
   "permissions": {
     "allow": [
-
       "Bash(pwd)",
       "Bash(ls)",
       "Bash(ls *)",
@@ -145,10 +144,8 @@
       "Bash(ps *)",
       "Bash(df *)",
       "Bash(du *)"
-
     ],
     "deny": [
-
       "Bash(rm *)",
       "Bash(rmdir *)",
 
@@ -174,7 +171,6 @@
       "Bash(chmod 777 *)",
       "Bash(sudo *)",
       "Bash(su *)"
-
     ]
   },
 
