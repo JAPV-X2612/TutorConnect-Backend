@@ -13,7 +13,7 @@ import {
   MetricasTutorDto,
   ProximaSesionDto,
   TutorDashboardResponseDto,
-} from './dto/tutor-dashboard.dto';
+} from './dtos/tutor-dashboard.dto';
 
 const ACTIVE_BOOKING_STATUSES = ['pending', 'confirmed', 'completed'];
 
