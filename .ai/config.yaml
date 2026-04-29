@@ -6,55 +6,89 @@
 
 project:
   name: tutor-connect-backend
-  display_name: "TutorConnect Backend"
-  version: "1.0"
-  description: "Modular monolith backend for an on-demand tutoring and skills marketplace"
+  display_name: 'TutorConnect Backend'
+  version: '1.0'
+  description: 'Modular monolith backend for an on-demand tutoring and skills marketplace'
   repo: https://github.com/JAPV-X2612/TutorConnect-Backend
-  course: "Innovación y Emprendimiento con TI (IETI)"
+  course: 'Innovación y Emprendimiento con TI (IETI)'
 
 stack:
   language: TypeScript
-  language_version: "5"
-  runtime: "Node.js 20 LTS"
-  framework: "NestJS 11"
+  language_version: '5'
+  runtime: 'Node.js 20 LTS'
+  framework: 'NestJS 11'
   orm: TypeORM
-  database: "PostgreSQL 16"
-  cache: "Redis"
-  vector_db: "Pinecone"
-  ai_model: "Claude API (Anthropic)"
-  auth: "Clerk (JWT validation only — never issues tokens)"
-  notifications: "Firebase"
-  file_storage: "AWS S3"
-  realtime: "Socket.io (WebSocket)"
-  validation: "class-validator + class-transformer"
-  config: "@nestjs/config"
-  containerization: "Docker + Docker Compose"
-  testing: "Jest + Supertest"
-  deployment: "AWS ECS Fargate + Application Load Balancer"
+  database: 'PostgreSQL 16'
+  cache: 'Redis'
+  vector_db: 'Pinecone'
+  ai_model: 'Claude API (Anthropic)'
+  auth: 'Clerk (JWT validation only — never issues tokens)'
+  notifications: 'Firebase'
+  file_storage: 'AWS S3'
+  realtime: 'Socket.io (WebSocket)'
+  validation: 'class-validator + class-transformer'
+  config: '@nestjs/config'
+  containerization: 'Docker + Docker Compose'
+  testing: 'Jest + Supertest'
+  deployment: 'AWS ECS Fargate + Application Load Balancer'
 
 architecture:
-  pattern: "Modular Monolith"
-  module_structure: "Feature-based NestJS modules — Controller → Service → TypeORM Repository"
-  communication: "REST (HTTP) + WebSocket (Socket.io) for real-time features"
-  auth_provider: "Clerk (external IdP) — backend validates JWT only, never issues it"
+  pattern: 'Modular Monolith'
+  module_structure: 'Feature-based NestJS modules — Controller → Service → TypeORM Repository'
+  communication: 'REST (HTTP) + WebSocket (Socket.io) for real-time features'
+  auth_provider: 'Clerk (external IdP) — backend validates JWT only, never issues it'
   layers:
-    - presentation   # NestJS controllers — input validation and delegation only, zero business logic
-    - application    # NestJS services — all business logic lives here
-    - persistence    # TypeORM entities and repositories
+    - presentation # NestJS controllers — input validation and delegation only, zero business logic
+    - application # NestJS services — all business logic lives here
+    - persistence # TypeORM entities and repositories
 
 modules:
-  auth:      { path: "src/modules/auth",      role: "JWT validation via ClerkJwtGuard, role-based access via RoleGuard" }
-  users:     { path: "src/modules/users",     role: "User and learner profile management" }
-  tutors:    { path: "src/modules/tutors",    role: "Tutor profiles, courses, certifications, availability" }
-  bookings:  { path: "src/modules/bookings",  role: "Session booking lifecycle + WebSocket real-time updates" }
-  messaging: { path: "src/modules/messaging", role: "Chat channels + real-time messages (Socket.io + Redis pub/sub)" }
-  dashboard: { path: "src/modules/dashboard", role: "Aggregated metrics for tutor and learner dashboards" }
-  reviews:   { path: "src/modules/reviews",   role: "Session reviews and rating aggregation" }
-  payments:  { path: "src/modules/payments",  role: "Commission-based payment lifecycle" }
-  search:    { path: "src/modules/search",    role: "AI-powered tutor search (Pinecone + Claude API)" }
-  webhooks:  { path: "src/modules/webhooks",  role: "Clerk webhook ingestion (user.created, user.updated)" }
-  health:    { path: "src/modules/health",    role: "Database health check endpoint" }
-  audit:     { path: "src/modules/audit",     role: "Audit trail logging" }
+  auth:
+    {
+      path: 'src/modules/auth',
+      role: 'JWT validation via ClerkJwtGuard, role-based access via RoleGuard',
+    }
+  users:
+    { path: 'src/modules/users', role: 'User and learner profile management' }
+  tutors:
+    {
+      path: 'src/modules/tutors',
+      role: 'Tutor profiles, courses, certifications, availability',
+    }
+  bookings:
+    {
+      path: 'src/modules/bookings',
+      role: 'Session booking lifecycle + WebSocket real-time updates',
+    }
+  messaging:
+    {
+      path: 'src/modules/messaging',
+      role: 'Chat channels + real-time messages (Socket.io + Redis pub/sub)',
+    }
+  dashboard:
+    {
+      path: 'src/modules/dashboard',
+      role: 'Aggregated metrics for tutor and learner dashboards',
+    }
+  reviews:
+    {
+      path: 'src/modules/reviews',
+      role: 'Session reviews and rating aggregation',
+    }
+  payments:
+    { path: 'src/modules/payments', role: 'Commission-based payment lifecycle' }
+  search:
+    {
+      path: 'src/modules/search',
+      role: 'AI-powered tutor search (Pinecone + Claude API)',
+    }
+  webhooks:
+    {
+      path: 'src/modules/webhooks',
+      role: 'Clerk webhook ingestion (user.created, user.updated)',
+    }
+  health: { path: 'src/modules/health', role: 'Database health check endpoint' }
+  audit: { path: 'src/modules/audit', role: 'Audit trail logging' }
 
 conventions:
   code_language: english
@@ -88,23 +122,23 @@ conventions:
 quality:
   coverage_threshold: 80
   test_framework: jest
-  test_naming: "should / should not pattern"
-  test_structure: "AAA (Arrange - Act - Assert)"
+  test_naming: 'should / should not pattern'
+  test_structure: 'AAA (Arrange - Act - Assert)'
   min_coverage: 80
   linting: eslint
   formatting: prettier
   max_response_time_ms: 500
 
 authors:
-  - name: "Camilo Andrés Quintero Rodríguez"
+  - name: 'Camilo Andrés Quintero Rodríguez'
     github: https://github.com/CamiloQuinteroR
-  - name: "Jesús Alfonso Pinzón Vega"
+  - name: 'Jesús Alfonso Pinzón Vega'
     github: https://github.com/JAPV-X2612
-  - name: "Laura Daniela Rodríguez Sánchez"
+  - name: 'Laura Daniela Rodríguez Sánchez'
     github: https://github.com/LauraRo166
-  - name: "Santiago Díaz Rojas"
+  - name: 'Santiago Díaz Rojas'
     github: https://github.com/buba-0511
-  - name: "Sergio Andrés Bejarano Rodríguez"
+  - name: 'Sergio Andrés Bejarano Rodríguez'
     github: https://github.com/SergioBejarano
 
 ai:

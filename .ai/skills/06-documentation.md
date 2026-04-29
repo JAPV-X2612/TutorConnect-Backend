@@ -58,18 +58,22 @@ Brief description paragraph.
 
 ### Formatting
 
-| Element | Convention |
-|---|---|
-| Key technologies | **bold** |
-| Foreign words / tech names | *italic* |
-| Commands / code / paths | `backtick` |
-| Code blocks | ` ```language ` (always specify language) |
-| Important data/values | Use tables instead of prose |
+| Element                    | Convention                                |
+| -------------------------- | ----------------------------------------- |
+| Key technologies           | **bold**                                  |
+| Foreign words / tech names | _italic_                                  |
+| Commands / code / paths    | `backtick`                                |
+| Code blocks                | ` ```language ` (always specify language) |
+| Important data/values      | Use tables instead of prose               |
 
 ### Images
 
 ```html
-<img src="assets/images/1-architecture-diagram.png" alt="Architecture Diagram" width="70%">
+<img
+  src="assets/images/1-architecture-diagram.png"
+  alt="Architecture Diagram"
+  width="70%"
+/>
 ```
 
 ### Hyperlinks
@@ -122,6 +126,7 @@ synchronize: false,
 ```
 
 Do NOT write:
+
 ```typescript
 // Get booking by id    ← explains WHAT (obvious from the method name)
 // Return the result    ← explains WHAT (obvious)

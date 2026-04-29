@@ -1,15 +1,30 @@
 import {
-  IsString, IsNotEmpty, IsOptional, IsNumber, Min, IsIn, MaxLength,
-  IsArray, ValidateNested,
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  IsNumber,
+  Min,
+  IsIn,
+  MaxLength,
+  IsArray,
+  ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
-const DAYS = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'] as const;
+const DAYS = [
+  'MONDAY',
+  'TUESDAY',
+  'WEDNESDAY',
+  'THURSDAY',
+  'FRIDAY',
+  'SATURDAY',
+  'SUNDAY',
+] as const;
 
 export class ScheduleSlotDto {
   @IsString()
   @IsIn(DAYS)
-  day: typeof DAYS[number];
+  day: (typeof DAYS)[number];
 
   @IsString()
   @IsNotEmpty()
