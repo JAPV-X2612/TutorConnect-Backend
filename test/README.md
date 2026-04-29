@@ -1,173 +1,89 @@
-# 🧪 Pruebas E2E - TutorConnect Backend
+# E2E Tests — TutorConnect Backend
 
-## 📋 Casos de Prueba Implementados
+## Test coverage
 
-Se han implementado pruebas end-to-end (e2e) para los tres módulos principales del sistema:
+### Users
 
-### 1️⃣ **Usuarios (Users)**
-- ✅ **Crear usuario**: Verifica que se cree correctamente y retorne 201
-- ✅ **Obtener usuario por ID**: Valida que la respuesta es correcta y retorna 200
-- ✅ **Intentar obtener usuario inexistente**: Verifica manejo de error 404
-- ✅ **Actualizar usuario**: Verifica actualización correcta y retorna 200
-- ✅ **Actualizar usuario inexistente**: Verifica error 404
-- ✅ **Eliminar usuario**: Verifica eliminación correcta y retorna 204
-- ✅ **Validación de datos**: Verifica que email inválido retorne 400
-- ✅ **Listar todos los usuarios**: Verifica que retorne 200
+- Create user → 201
+- Get user by ID → 200
+- Get non-existent user → 404
+- Update user → 200
+- Update non-existent user → 404
+- Delete user → 204
+- Invalid email validation → 400
+- List all users → 200
 
-### 2️⃣ **Tutores (Tutors)**
-- ✅ **Crear perfil de tutor**: Verifica creación correcta y retorna 201
-- ✅ **Crear tutor con usuario inexistente**: Verifica error 404
-- ✅ **Crear tutor con UUID inválido**: Verifica error 400
-- ✅ **Obtener tutor por ID**: Valida respuesta correcta y retorna 200
-- ✅ **Obtener tutor inexistente**: Verifica error 404
-- ✅ **Actualizar tutor**: Verifica actualización correcta y retorna 200
-- ✅ **Actualizar tutor inexistente**: Verifica error 404
-- ✅ **Eliminar tutor**: Verifica eliminación correcta y retorna 204
-- ✅ **Listar todos los tutores**: Verifica que retorne 200
+### Tutors
 
-### 3️⃣ **Reservas (Bookings)**
-- ✅ **Crear reserva**: Verifica creación correcta y retorna 201
-- ✅ **Crear reserva con estudiante inexistente**: Verifica error 404
-- ✅ **Crear reserva con tutor inexistente**: Verifica error 404
-- ✅ **Crear reserva con fecha inválida**: Verifica error 400
-- ✅ **Obtener reserva por ID**: Valida respuesta correcta y retorna 200
-- ✅ **Obtener reserva inexistente**: Verifica error 404
-- ✅ **Actualizar reserva**: Verifica actualización correcta y retorna 200
-- ✅ **Actualizar reserva inexistente**: Verifica error 404
-- ✅ **Eliminar reserva**: Verifica eliminación correcta y retorna 204
-- ✅ **Listar todas las reservas**: Verifica que retorne 200
+- Create tutor profile → 201
+- Create tutor with non-existent user → 404
+- Create tutor with invalid UUID → 400
+- Get tutor by ID → 200
+- Get non-existent tutor → 404
+- Update tutor → 200
+- Update non-existent tutor → 404
+- Delete tutor → 204
+- List all tutors → 200
+
+### Bookings
+
+- Create booking → 201
+- Create booking with non-existent student → 404
+- Create booking with non-existent tutor → 404
+- Create booking with invalid date → 400
+- Get booking by ID → 200
+- Get non-existent booking → 404
+- Update booking → 200
+- Update non-existent booking → 404
+- Delete booking → 204
+- List all bookings → 200
 
 ---
 
-## 🚀 Cómo Ejecutar las Pruebas
+## Running the tests
 
-### Opción 1: Con Docker (Recomendado)
+**1. Start the database:**
 
-1. **Asegúrate de que Docker esté corriendo**:
-```bash
-docker --version
-```
-
-2. **Inicia la base de datos**:
 ```bash
 npm run docker:dev
 ```
 
-3. **Crea un archivo `.env.test` en la raíz del proyecto**:
+**2. Create `.env.test` in the project root:**
+
 ```env
-# Database Test Configuration
 DATABASE_HOST=localhost
 DATABASE_PORT=5432
 DATABASE_NAME=tutorconnect
 DATABASE_USER=postgres
 DATABASE_PASSWORD=postgres123
-
-# App Configuration
 PORT=3001
 NODE_ENV=test
 ```
 
-4. **Ejecuta las pruebas**:
-```bash
-npm run test:e2e
-```
+**3. Run:**
 
-### Opción 2: Con Base de Datos Local
-
-Si tienes PostgreSQL instalado localmente:
-
-1. **Crea una base de datos de pruebas**:
-```sql
-CREATE DATABASE tutorconnect_test;
-```
-
-2. **Configura el archivo `.env.test`**:
-```env
-DATABASE_HOST=localhost
-DATABASE_PORT=5432
-DATABASE_NAME=tutorconnect_test
-DATABASE_USER=tu_usuario
-DATABASE_PASSWORD=tu_contraseña
-```
-
-3. **Ejecuta las pruebas**:
 ```bash
 npm run test:e2e
 ```
 
 ---
 
-## 📊 Cobertura de Pruebas
-
-Las pruebas cubren:
-- ✅ **Códigos HTTP correctos** (200, 201, 204, 400, 404)
-- ✅ **Validación de datos de entrada**
-- ✅ **Manejo de errores** (recursos no encontrados, datos inválidos)
-- ✅ **CRUD completo** (Create, Read, Update, Delete)
-- ✅ **Relaciones entre entidades** (User-Tutor, Student-Tutor-Booking)
-- ✅ **Validaciones de negocio** (usuario debe existir antes de crear tutor)
-
----
-
-## 🎯 Casos de Uso Críticos
-
-### Caso 1: Crear y Verificar Usuario
-```typescript
-POST /users
-Body: { name: "María", email: "maria@example.com", role: "student" }
-Resultado esperado: 201 Created + datos del usuario con ID generado
-```
-
-### Caso 2: Obtener Usuario por ID
-```typescript
-GET /users/{id}
-Resultado esperado: 200 OK + datos completos del usuario
-```
-
-### Caso 3: Actualizar Recurso Inexistente
-```typescript
-PUT /users/00000000-0000-0000-0000-000000000000
-Resultado esperado: 404 Not Found + mensaje de error estructurado
-```
-
----
-
-## 📁 Ubicación de las Pruebas
+## File structure
 
 ```
 test/
-├── users.e2e-spec.ts     # Pruebas del módulo de usuarios
-├── tutors.e2e-spec.ts    # Pruebas del módulo de tutores
-├── bookings.e2e-spec.ts  # Pruebas del módulo de reservas
-└── jest-e2e.json         # Configuración de Jest para e2e
+  users.e2e-spec.ts
+  tutors.e2e-spec.ts
+  bookings.e2e-spec.ts
+  jest-e2e.json
 ```
 
 ---
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
-### Error: "password authentication failed"
-- Verifica que las credenciales en `.env.test` coincidan con tu base de datos
-- Asegúrate de que PostgreSQL esté corriendo
+**`password authentication failed`** — check credentials in `.env.test` match the running database.
 
-### Error: "relation does not exist"
-- La base de datos no tiene las tablas creadas
-- Ejecuta la aplicación una vez para que TypeORM cree las tablas automáticamente
-- O ejecuta: `npm run docker:up` y luego `npm run test:e2e`
+**`relation does not exist`** — tables not created yet. Run `npm run migration:run -- -d src/data-source.ts` before the tests.
 
-### Error: "timeout"
-- La aplicación tarda en conectarse a la base de datos
-- Aumenta el timeout en el archivo de pruebas o espera a que la BD esté lista
-
----
-
-## 📚 Tecnologías Utilizadas
-
-- **Jest**: Framework de testing
-- **Supertest**: Testing HTTP
-- **NestJS Testing**: Utilidades de testing de Nest
-- **TypeORM**: ORM para gestión de base de datos
-
----
-
-¿Preguntas? Abre un issue en el repositorio.
+**`timeout`** — PostgreSQL is still starting up. Wait a few seconds and retry.

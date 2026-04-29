@@ -6,26 +6,26 @@ NestJS backend for **TutorConnect** — a marketplace connecting university stud
 
 ## Documentation
 
-| File | Description |
-|---|---|
-| [QUICKSTART.md](./QUICKSTART.md) | Start the project in 2 steps |
-| [DOCKER.md](./DOCKER.md) | Full Docker reference |
-| [CLAUDE.md](./CLAUDE.md) | Architecture, conventions, and AI assistant context |
-| [PENDING_AWS_TASKS.md](./PENDING_AWS_TASKS.md) | Manual AWS infrastructure tasks |
+| File                                           | Description                                         |
+| ---------------------------------------------- | --------------------------------------------------- |
+| [QUICKSTART.md](./QUICKSTART.md)               | Start the project in 2 steps                        |
+| [DOCKER.md](./DOCKER.md)                       | Full Docker reference                               |
+| [CLAUDE.md](./CLAUDE.md)                       | Architecture, conventions, and AI assistant context |
+| [PENDING_AWS_TASKS.md](./PENDING_AWS_TASKS.md) | Manual AWS infrastructure tasks                     |
 
 ---
 
 ## Tech Stack
 
-| Layer | Technology |
-|---|---|
-| Framework | NestJS 11 + TypeScript 5 |
-| ORM | TypeORM 0.3 |
-| Database | PostgreSQL 16 |
-| Auth | Clerk (JWT verification) |
-| Real-time | Socket.io |
-| Storage | AWS S3 |
-| CI/CD | GitHub Actions → AWS ECS Fargate |
+| Layer     | Technology                       |
+| --------- | -------------------------------- |
+| Framework | NestJS 11 + TypeScript 5         |
+| ORM       | TypeORM 0.3                      |
+| Database  | PostgreSQL 16                    |
+| Auth      | Clerk (JWT verification)         |
+| Real-time | Socket.io                        |
+| Storage   | AWS S3                           |
+| CI/CD     | GitHub Actions → AWS ECS Fargate |
 
 ---
 
@@ -88,20 +88,20 @@ npm run migration:revert -- -d src/data-source.ts
 
 ## Scripts
 
-| Script | Description |
-|---|---|
-| `npm run start:dev` | Dev server with hot reload |
-| `npm run build` | Compile TypeScript |
-| `npm run start:prod` | Run compiled output |
-| `npm test` | Unit tests |
-| `npm run test:cov` | Coverage report |
-| `npm run test:e2e` | End-to-end tests |
-| `npm run lint` | ESLint |
-| `npm run format` | Prettier |
-| `npm run docker:up` | Start all Docker services |
-| `npm run docker:dev` | Start PostgreSQL only |
-| `npm run docker:down` | Stop all Docker services |
-| `npm run docker:logs` | Stream Docker logs |
+| Script                | Description                |
+| --------------------- | -------------------------- |
+| `npm run start:dev`   | Dev server with hot reload |
+| `npm run build`       | Compile TypeScript         |
+| `npm run start:prod`  | Run compiled output        |
+| `npm test`            | Unit tests                 |
+| `npm run test:cov`    | Coverage report            |
+| `npm run test:e2e`    | End-to-end tests           |
+| `npm run lint`        | ESLint                     |
+| `npm run format`      | Prettier                   |
+| `npm run docker:up`   | Start all Docker services  |
+| `npm run docker:dev`  | Start PostgreSQL only      |
+| `npm run docker:down` | Stop all Docker services   |
+| `npm run docker:logs` | Stream Docker logs         |
 
 ---
 
