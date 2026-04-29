@@ -34,7 +34,9 @@ function makeSelectQB(rows: Partial<BookingEntity>[]) {
 }
 
 /** Returns a minimal BookingEntity stub for upcoming sessions. */
-function makeBookingStub(overrides: Partial<BookingEntity> = {}): Partial<BookingEntity> {
+function makeBookingStub(
+  overrides: Partial<BookingEntity> = {},
+): Partial<BookingEntity> {
   return {
     id: 'session-uuid-1',
     startTime: new Date('2025-04-20T15:00:00Z'),
@@ -61,7 +63,10 @@ describe('DashboardService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         DashboardService,
-        { provide: getRepositoryToken(BookingEntity), useValue: mockBookingRepo },
+        {
+          provide: getRepositoryToken(BookingEntity),
+          useValue: mockBookingRepo,
+        },
         { provide: getRepositoryToken(ReviewEntity), useValue: mockReviewRepo },
       ],
     }).compile();
@@ -83,7 +88,7 @@ describe('DashboardService', () => {
     upcomingBookings?: Partial<BookingEntity>[];
   } = {}) {
     mockBookingRepo.createQueryBuilder
-      .mockReturnValueOnce(makeRawQB(sessionRaw))    // 1st call: metrics
+      .mockReturnValueOnce(makeRawQB(sessionRaw)) // 1st call: metrics
       .mockReturnValueOnce(makeSelectQB(upcomingBookings)); // 2nd call: sessions
 
     mockReviewRepo.createQueryBuilder.mockReturnValue(makeReviewQB(reviewRaw));
@@ -178,7 +183,11 @@ describe('DashboardService', () => {
       const fecha = new Date('2025-04-20T15:00:00Z');
       wireRepos({
         upcomingBookings: [
-          makeBookingStub({ id: 'uuid-1', startTime: fecha, subject: 'Cálculo' }),
+          makeBookingStub({
+            id: 'uuid-1',
+            startTime: fecha,
+            subject: 'Cálculo',
+          }),
         ],
       });
 
@@ -227,7 +236,8 @@ describe('DashboardService', () => {
 
       await service.getTutorDashboard(CLERK_ID);
 
-      const sessionsQB = mockBookingRepo.createQueryBuilder.mock.results[1].value;
+      const sessionsQB =
+        mockBookingRepo.createQueryBuilder.mock.results[1].value;
       expect(sessionsQB.innerJoin).toHaveBeenCalledWith(
         'b.tutor',
         't',
@@ -245,7 +255,8 @@ describe('DashboardService', () => {
 
       await service.getTutorDashboard(CLERK_ID);
 
-      const metricsQB = mockBookingRepo.createQueryBuilder.mock.results[0].value;
+      const metricsQB =
+        mockBookingRepo.createQueryBuilder.mock.results[0].value;
       expect(metricsQB.innerJoin).toHaveBeenCalledWith(
         'b.tutor',
         't',
@@ -271,15 +282,21 @@ describe('DashboardService', () => {
     it('runs session and review queries in parallel (Promise.all)', async () => {
       const sessionOrder: string[] = [];
 
-      const metricsQB = makeRawQB({ total_sesiones: '5', ingresos_totales: '100' });
+      const metricsQB = makeRawQB({
+        total_sesiones: '5',
+        ingresos_totales: '100',
+      });
       const sessionsQB = makeSelectQB([makeBookingStub()]);
-      const reviewQB = makeRawQB({ total_resenas: '2', calificacion_promedio: '4.5' });
+      const reviewQB = makeRawQB({
+        total_resenas: '2',
+        calificacion_promedio: '4.5',
+      });
 
-      (metricsQB.getRawOne as jest.Mock).mockImplementation(async () => {
+      metricsQB.getRawOne.mockImplementation(async () => {
         sessionOrder.push('metrics-resolved');
         return { total_sesiones: '5', ingresos_totales: '100' };
       });
-      (reviewQB.getRawOne as jest.Mock).mockImplementation(async () => {
+      reviewQB.getRawOne.mockImplementation(async () => {
         sessionOrder.push('review-resolved');
         return { total_resenas: '2', calificacion_promedio: '4.5' };
       });

@@ -70,7 +70,9 @@ export class DashboardService {
    *
    * @param userId - Internal user primary key.
    */
-  private async buildWeeklyProgress(userId: number): Promise<WeeklyProgressDto> {
+  private async buildWeeklyProgress(
+    userId: number,
+  ): Promise<WeeklyProgressDto> {
     const { weekStart, weekEnd } = this.currentWeekRange();
 
     const base = () =>
@@ -86,7 +88,9 @@ export class DashboardService {
         .andWhere('b.status = :completed', { completed: 'completed' })
         .getCount(),
       base()
-        .andWhere('b.status IN (:...statuses)', { statuses: ACTIVE_BOOKING_STATUSES })
+        .andWhere('b.status IN (:...statuses)', {
+          statuses: ACTIVE_BOOKING_STATUSES,
+        })
         .getCount(),
     ]);
 
@@ -109,7 +113,9 @@ export class DashboardService {
       .innerJoinAndSelect('b.tutor', 't')
       .where('l.id = :userId', { userId })
       .andWhere('b.startTime > :now', { now: new Date() })
-      .andWhere('b.status IN (:...statuses)', { statuses: ACTIVE_BOOKING_STATUSES })
+      .andWhere('b.status IN (:...statuses)', {
+        statuses: ACTIVE_BOOKING_STATUSES,
+      })
       .orderBy('b.startTime', 'ASC')
       .take(5)
       .getMany();
@@ -175,7 +181,10 @@ export class DashboardService {
         .select('COUNT(r.id)', 'total_resenas')
         .addSelect('AVG(r.rating)', 'calificacion_promedio')
         .innerJoin('r.tutor', 'u', 'u.clerkId = :clerkId', { clerkId })
-        .getRawOne<{ total_resenas: string; calificacion_promedio: string | null }>(),
+        .getRawOne<{
+          total_resenas: string;
+          calificacion_promedio: string | null;
+        }>(),
     ]);
 
     const promedioRaw = reviewRaw?.calificacion_promedio;
@@ -186,7 +195,9 @@ export class DashboardService {
       moneda: 'COP',
       periodo,
       calificacion_promedio:
-        promedioRaw != null ? Math.round(Number(promedioRaw) * 100) / 100 : null,
+        promedioRaw != null
+          ? Math.round(Number(promedioRaw) * 100) / 100
+          : null,
       total_resenas: Number(reviewRaw?.total_resenas ?? 0),
     };
   }

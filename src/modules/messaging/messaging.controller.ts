@@ -48,7 +48,11 @@ export class MessagingController {
   @HttpCode(HttpStatus.OK)
   async getOrCreateChannel(@Req() req: Request, @Body() dto: CreateChannelDto) {
     const { clerk_id } = (req as any).user;
-    return this.messagingService.getOrCreateChannel(clerk_id, dto.otherClerkId, dto.courseId);
+    return this.messagingService.getOrCreateChannel(
+      clerk_id,
+      dto.otherClerkId,
+      dto.courseId,
+    );
   }
 
   /**

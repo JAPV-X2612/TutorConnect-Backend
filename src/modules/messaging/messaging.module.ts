@@ -17,14 +17,19 @@ import { MessagingController } from './messaging.controller';
     TypeOrmModule.forFeature([
       ChatChannelEntity,
       MessageEntity,
-      UserEntity,        // ClerkJwtGuard + MessagingService
+      UserEntity, // ClerkJwtGuard + MessagingService
       TutorCourseEntity, // course reference on channel
-      TutorEntity,       // booking lookup via legacy tutors table
-      BookingEntity,     // active-booking check for expiry logic
+      TutorEntity, // booking lookup via legacy tutors table
+      BookingEntity, // active-booking check for expiry logic
     ]),
   ],
   controllers: [MessagingController],
-  providers: [MessagingDBService, UsersDBService, MessagingService, MessagingGateway],
+  providers: [
+    MessagingDBService,
+    UsersDBService,
+    MessagingService,
+    MessagingGateway,
+  ],
   exports: [MessagingService, MessagingGateway],
 })
 export class MessagingModule {}
