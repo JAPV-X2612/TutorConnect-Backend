@@ -14,7 +14,7 @@ import {
 import type { Request } from 'express';
 import { ClerkJwtGuard } from '../auth/clerk-jwt.guard';
 import { MessagingService } from './services/messaging.service';
-import { CreateChannelDto } from './dto/requests/create-channel.dto';
+import { CreateChannelDto } from './dtos/requests/create-channel.dto';
 
 /**
  * REST controller for MOD-MSG-005 (Messaging).
