@@ -21,7 +21,7 @@ import { Roles } from '../auth/role.decorator';
 import { UserRole } from '../../common/enums/user-role.enum';
 import { DashboardService } from './dashboard.service';
 import { LearnerDashboardDto } from './dtos/learner-dashboard.dto';
-import { TutorDashboardResponseDto } from './dto/tutor-dashboard.dto';
+import { TutorDashboardResponseDto } from './dtos/tutor-dashboard.dto';
 
 /** Typed shape of the authenticated user attached by {@link ClerkJwtGuard}. */
 interface AuthRequest extends Request {
