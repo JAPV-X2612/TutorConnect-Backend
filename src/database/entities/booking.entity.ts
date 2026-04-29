@@ -24,7 +24,11 @@ export class BookingEntity {
   @JoinColumn({ name: 'tutor_id' })
   tutor: TutorEntity;
 
-  @ManyToOne(() => TutorCourseEntity, { onDelete: 'SET NULL', nullable: true, eager: false })
+  @ManyToOne(() => TutorCourseEntity, {
+    onDelete: 'SET NULL',
+    nullable: true,
+    eager: false,
+  })
   @JoinColumn({ name: 'course_id' })
   course: TutorCourseEntity | null;
 

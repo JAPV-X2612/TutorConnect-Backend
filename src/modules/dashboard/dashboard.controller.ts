@@ -64,7 +64,10 @@ export class DashboardController {
     description: 'Weekly session progress and the next 5 scheduled sessions.',
   })
   @ApiUnauthorizedResponse({ description: 'Missing or invalid JWT.' })
-  @ApiResponse({ status: 403, description: 'Access denied. LEARNER role required.' })
+  @ApiResponse({
+    status: 403,
+    description: 'Access denied. LEARNER role required.',
+  })
   getLearnerDashboard(@Req() req: AuthRequest): Promise<LearnerDashboardDto> {
     return this.dashboardService.getLearnerDashboard(req.user.clerk_id);
   }
@@ -88,8 +91,13 @@ export class DashboardController {
     description: 'Current-month metrics and next 5 scheduled sessions.',
   })
   @ApiUnauthorizedResponse({ description: 'Missing or invalid JWT.' })
-  @ApiResponse({ status: 403, description: 'Access denied. TUTOR role required.' })
-  getTutorDashboard(@Req() req: AuthRequest): Promise<TutorDashboardResponseDto> {
+  @ApiResponse({
+    status: 403,
+    description: 'Access denied. TUTOR role required.',
+  })
+  getTutorDashboard(
+    @Req() req: AuthRequest,
+  ): Promise<TutorDashboardResponseDto> {
     return this.dashboardService.getTutorDashboard(req.user.clerk_id);
   }
 }

@@ -130,7 +130,8 @@ export class BookingsService {
       relations: ['tutor', 'student', 'course'],
     });
     if (!booking) throw new NotFoundException('Reserva no encontrada');
-    if (booking.tutor.id !== tutor.id) throw new ForbiddenException('Acceso denegado');
+    if (booking.tutor.id !== tutor.id)
+      throw new ForbiddenException('Acceso denegado');
     if (booking.status !== 'pending') {
       throw new BadRequestException(
         'Solo se pueden gestionar reservas pendientes',
@@ -164,7 +165,8 @@ export class BookingsService {
       relations: ['student', 'tutor', 'course'],
     });
     if (!booking) throw new NotFoundException('Reserva no encontrada');
-    if (booking.student.id !== learner.id) throw new ForbiddenException('Acceso denegado');
+    if (booking.student.id !== learner.id)
+      throw new ForbiddenException('Acceso denegado');
     if (booking.status === 'completed' || booking.status === 'cancelled') {
       throw new BadRequestException('No se puede cancelar esta reserva');
     }

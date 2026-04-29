@@ -4,16 +4,26 @@ export class MetricasTutorDto {
   @ApiProperty({ example: 24 })
   total_sesiones: number;
 
-  @ApiProperty({ example: 480000, description: 'Ingresos brutos en COP (antes de comisión TutorConnect)' })
+  @ApiProperty({
+    example: 480000,
+    description: 'Ingresos brutos en COP (antes de comisión TutorConnect)',
+  })
   ingresos_totales: number;
 
   @ApiProperty({ example: 'COP' })
   moneda: string;
 
-  @ApiProperty({ example: '2025-04', description: 'Período YYYY-MM del mes actual' })
+  @ApiProperty({
+    example: '2025-04',
+    description: 'Período YYYY-MM del mes actual',
+  })
   periodo: string;
 
-  @ApiProperty({ example: 4.8, nullable: true, description: 'null si el tutor no tiene reseñas aún' })
+  @ApiProperty({
+    example: 4.8,
+    nullable: true,
+    description: 'null si el tutor no tiene reseñas aún',
+  })
   calificacion_promedio: number | null;
 
   @ApiProperty({ example: 18 })

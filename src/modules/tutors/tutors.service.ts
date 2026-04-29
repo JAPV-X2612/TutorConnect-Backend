@@ -86,7 +86,11 @@ export class TutorsService {
       rating: tutor.rating,
       hasCertificaciones: tutor.certificaciones.length > 0,
       user: userRow
-        ? { email: userRow.email, city: userRow.city ?? undefined, country: userRow.country }
+        ? {
+            email: userRow.email,
+            city: userRow.city ?? undefined,
+            country: userRow.country,
+          }
         : undefined,
     };
   }
@@ -96,7 +100,12 @@ export class TutorsService {
   async register(
     clerkId: string,
     dto: RegisterTutorDto,
-  ): Promise<{ id: string; nombre: string; apellido: string; estado: EstadoTutor }> {
+  ): Promise<{
+    id: string;
+    nombre: string;
+    apellido: string;
+    estado: EstadoTutor;
+  }> {
     this.logger.log(`[register] Request received for clerk_id=${clerkId}`);
 
     const existing = await this.tutorRepository.findOne({ where: { clerkId } });
@@ -118,7 +127,9 @@ export class TutorsService {
     const saved = await this.tutorRepository.save(tutor);
 
     // Upsert into UserEntity — handles both "webhook arrived" and "webhook not yet" cases.
-    const existingUser = await this.userRepository.findOne({ where: { clerkId } });
+    const existingUser = await this.userRepository.findOne({
+      where: { clerkId },
+    });
     if (!existingUser) {
       // Check by email in case the user deleted and re-registered (re-link).
       const byEmail = dto.email
@@ -184,7 +195,8 @@ export class TutorsService {
       relations: ['certificaciones'],
     });
     if (!tutor) throw new NotFoundException('Tutor no encontrado');
-    if (tutor.clerkId !== clerkId) throw new ForbiddenException('Acceso denegado');
+    if (tutor.clerkId !== clerkId)
+      throw new ForbiddenException('Acceso denegado');
 
     if (!ALLOWED_MIME_TYPES.includes(file.mimetype)) {
       throw new BadRequestException('Solo se permiten PDF, JPG y PNG');
@@ -193,7 +205,9 @@ export class TutorsService {
       throw new BadRequestException('El archivo no puede superar 5 MB');
     }
     if (tutor.certificaciones.length >= MAX_CERTIFICACIONES) {
-      throw new BadRequestException('No se pueden subir más de 10 certificaciones');
+      throw new BadRequestException(
+        'No se pueden subir más de 10 certificaciones',
+      );
     }
 
     const s3Key = `certificaciones/${tutorId}/${randomUUID()}-${file.originalname}`;
@@ -246,7 +260,9 @@ export class TutorsService {
       created_at: Date;
     }>
   > {
-    const tutor = await this.tutorRepository.findOne({ where: { id: tutorId } });
+    const tutor = await this.tutorRepository.findOne({
+      where: { id: tutorId },
+    });
     if (!tutor) throw new NotFoundException('Tutor no encontrado');
 
     const certs = await this.certRepository.find({
@@ -259,7 +275,10 @@ export class TutorsService {
         id: cert.id,
         nombre_archivo: cert.nombreArchivo,
         mime_type: cert.mimeType,
-        url_presignada: await this.storageService.getPresignedUrl(cert.s3Key, 900),
+        url_presignada: await this.storageService.getPresignedUrl(
+          cert.s3Key,
+          900,
+        ),
         created_at: cert.createdAt,
       })),
     );
@@ -315,11 +334,14 @@ export class TutorsService {
     if (dto.bio !== undefined) tutor.bio = dto.bio;
     if (dto.subjects !== undefined) tutor.subjects = dto.subjects;
     if (dto.precioHora !== undefined) tutor.precioHora = dto.precioHora;
-    if (dto.experienceYears !== undefined) tutor.experienceYears = dto.experienceYears;
+    if (dto.experienceYears !== undefined)
+      tutor.experienceYears = dto.experienceYears;
 
     // City lives on UserEntity — update via clerkId.
     if (dto.ciudad !== undefined) {
-      const userRow = await this.userRepository.findOne({ where: { clerkId: tutor.clerkId } });
+      const userRow = await this.userRepository.findOne({
+        where: { clerkId: tutor.clerkId },
+      });
       if (userRow) {
         userRow.city = dto.ciudad.toUpperCase();
         await this.userRepository.save(userRow);
@@ -336,7 +358,10 @@ export class TutorsService {
 
   // ── Course management ─────────────────────────────────────────────────────
 
-  async createCourse(clerkId: string, dto: CreateCourseDto): Promise<TutorCourseEntity> {
+  async createCourse(
+    clerkId: string,
+    dto: CreateCourseDto,
+  ): Promise<TutorCourseEntity> {
     const tutor = await this.findByClerkId(clerkId);
     const course = this.courseRepository.create({
       tutor,
@@ -349,7 +374,9 @@ export class TutorsService {
       isActive: true,
     });
     const saved = await this.courseRepository.save(course);
-    this.logger.log(`[courses] Created course "${dto.subject}" for tutor ${tutor.id}`);
+    this.logger.log(
+      `[courses] Created course "${dto.subject}" for tutor ${tutor.id}`,
+    );
     return saved;
   }
 
@@ -428,7 +455,9 @@ export class TutorsService {
     if (!course) throw new NotFoundException('Curso no encontrado');
 
     const userRow = course.tutor?.clerkId
-      ? await this.userRepository.findOne({ where: { clerkId: course.tutor.clerkId } })
+      ? await this.userRepository.findOne({
+          where: { clerkId: course.tutor.clerkId },
+        })
       : null;
 
     return {

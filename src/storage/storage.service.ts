@@ -1,4 +1,8 @@
-import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+} from '@nestjs/common';
 import {
   S3Client,
   PutObjectCommand,
@@ -28,7 +32,11 @@ export class StorageService {
     });
   }
 
-  async uploadFile(key: string, buffer: Buffer, mimeType: string): Promise<void> {
+  async uploadFile(
+    key: string,
+    buffer: Buffer,
+    mimeType: string,
+  ): Promise<void> {
     try {
       await this.client.send(
         new PutObjectCommand({
