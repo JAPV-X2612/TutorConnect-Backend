@@ -30,10 +30,10 @@ npm run docker:down
 
 ## Services
 
-| Service | Container | Port | Notes |
-|---|---|---|---|
-| PostgreSQL | `tutorconnect-postgres` | `5432` | DB: `tutorconnect`, user: `postgres`, password: `postgres123` |
-| NestJS Backend | `tutorconnect-backend` | `3000` | Health: http://localhost:3000/api/health |
+| Service        | Container               | Port   | Notes                                                         |
+| -------------- | ----------------------- | ------ | ------------------------------------------------------------- |
+| PostgreSQL     | `tutorconnect-postgres` | `5432` | DB: `tutorconnect`, user: `postgres`, password: `postgres123` |
+| NestJS Backend | `tutorconnect-backend`  | `3000` | Health: http://localhost:3000/api/health                      |
 
 ---
 
@@ -146,16 +146,17 @@ cat backup.sql | docker exec -i tutorconnect-postgres psql -U postgres -d tutorc
 **Port 5432 already in use:**
 
 Stop local PostgreSQL, or change the host-side port in `docker-compose.yml`:
+
 ```yaml
 ports:
-  - "5433:5432"
+  - '5433:5432'
 ```
 
 **Port 3000 already in use:**
 
 ```yaml
 ports:
-  - "3001:3000"
+  - '3001:3000'
 ```
 
 **App cannot connect to database:**
@@ -167,6 +168,7 @@ ports:
 **Code changes not reflected:**
 
 The app image is compiled at build time. Rebuild:
+
 ```bash
 docker compose up -d --build
 ```

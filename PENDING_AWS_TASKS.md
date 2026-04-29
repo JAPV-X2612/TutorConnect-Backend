@@ -22,12 +22,12 @@ These tasks require a real AWS account and cannot be automated in code.
 
 Register the following parameters (type `SecureString` for credentials):
 
-| Parameter | Container env var | Value |
-|---|---|---|
-| `/tutorconnect/s3-bucket-name` | `S3_BUCKET_NAME` | `tutorconnect-certificaciones` |
-| `/tutorconnect/s3-region` | `S3_REGION` | `us-east-1` |
-| `/tutorconnect/aws-access-key-id` | `AWS_ACCESS_KEY_ID` | *(from IAM step)* |
-| `/tutorconnect/aws-secret-access-key` | `AWS_SECRET_ACCESS_KEY` | *(from IAM step)* |
+| Parameter                             | Container env var       | Value                          |
+| ------------------------------------- | ----------------------- | ------------------------------ |
+| `/tutorconnect/s3-bucket-name`        | `S3_BUCKET_NAME`        | `tutorconnect-certificaciones` |
+| `/tutorconnect/s3-region`             | `S3_REGION`             | `us-east-1`                    |
+| `/tutorconnect/aws-access-key-id`     | `AWS_ACCESS_KEY_ID`     | _(from IAM step)_              |
+| `/tutorconnect/aws-secret-access-key` | `AWS_SECRET_ACCESS_KEY` | _(from IAM step)_              |
 
 ## StorageService — Real S3 integration
 
