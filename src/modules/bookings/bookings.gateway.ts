@@ -11,7 +11,9 @@ import { Logger } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
 
 @WebSocketGateway({ cors: { origin: '*' }, namespace: '/bookings' })
-export class BookingsGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export class BookingsGateway
+  implements OnGatewayConnection, OnGatewayDisconnect
+{
   @WebSocketServer()
   server: Server;
 
