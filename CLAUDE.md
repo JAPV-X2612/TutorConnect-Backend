@@ -17,32 +17,32 @@ Read it fully before making any changes.
 
 ## Team
 
-| Name | GitHub | Role |
-|---|---|---|
-| Camilo Quintero | @CamiloQ | Full-stack |
-| Jesús Pinzón | @JAPV-X2612 | Full-stack |
-| Laura Rodríguez | @LauraR | Full-stack |
-| Santiago Díaz | @SantiD | Full-stack |
-| Sergio Bejarano | @SergioB | Full-stack |
+| Name            | GitHub      | Role       |
+| --------------- | ----------- | ---------- |
+| Camilo Quintero | @CamiloQ    | Full-stack |
+| Jesús Pinzón    | @JAPV-X2612 | Full-stack |
+| Laura Rodríguez | @LauraR     | Full-stack |
+| Santiago Díaz   | @SantiD     | Full-stack |
+| Sergio Bejarano | @SergioB    | Full-stack |
 
 ---
 
 ## Tech Stack
 
-| Layer | Technology                                                  |
-|---|-------------------------------------------------------------|
-| Runtime | Node.js 20, TypeScript 5                                    |
-| Framework | NestJS 11                                                   |
-| ORM | TypeORM 0.3                                                 |
-| Database | PostgreSQL (Docker local, AWS RDS prod)                     |
-| Auth | Clerk (JWT verification only — backend never issues tokens) |
-| Real-time | Socket.io via `@nestjs/websockets`                          |
-| Storage | AWS S3 (`@aws-sdk/client-s3`)                               |
+| Layer              | Technology                                                  |
+| ------------------ | ----------------------------------------------------------- |
+| Runtime            | Node.js 20, TypeScript 5                                    |
+| Framework          | NestJS 11                                                   |
+| ORM                | TypeORM 0.3                                                 |
+| Database           | PostgreSQL (Docker local, AWS RDS prod)                     |
+| Auth               | Clerk (JWT verification only — backend never issues tokens) |
+| Real-time          | Socket.io via `@nestjs/websockets`                          |
+| Storage            | AWS S3 (`@aws-sdk/client-s3`)                               |
 | Push Notifications | Firebase Cloud Messaging                                    |
 | AI / Vector Search | Claude API + Voyage AI + Pinecone                           |
-| Cache | Redis                                                       |
-| Webhooks | Svix (Clerk webhook signature verification)                 |
-| CI/CD | GitHub Actions → AWS ECS Fargate                            |
+| Cache              | Redis                                                       |
+| Webhooks           | Svix (Clerk webhook signature verification)                 |
+| CI/CD              | GitHub Actions → AWS ECS Fargate                            |
 
 ---
 
@@ -113,7 +113,7 @@ src/
 
 ```typescript
 export interface ClerkRequestUser {
-  clerk_id: string;   // ← snake_case — NOT clerkId
+  clerk_id: string; // ← snake_case — NOT clerkId
   role: UserRole | null;
   sessionId: string;
 }
@@ -153,20 +153,21 @@ myLearnerEndpoint() {}
 
 The codebase has a split between legacy and module-scoped entities. **Always register all entities in `src/data-source.ts`** when adding new ones.
 
-| Entity | File | Table |
-|---|---|---|
-| `UserEntity` | `src/modules/users/entities/user.entity.ts` | `user` |
-| `LearnerPreferenceEntity` | `src/modules/users/entities/learner-preference.entity.ts` | (learner_preference) |
-| `TutorEntity` | `src/database/entities/tutor.entity.ts` | (see entity file) |
-| `BookingEntity` | `src/database/entities/booking.entity.ts` | `bookings` |
-| `TutorAvailabilityEntity` | `src/modules/tutors/entities/tutor-availability.entity.ts` | `tutor_availability` |
-| `TutorCourseEntity` | `src/modules/tutors/entities/tutor-course.entity.ts` | `tutor_courses` |
-| `TutorCertificationEntity` | `src/modules/tutors/entities/tutor-certification.entity.ts` | (see entity file) |
-| `TutorTopicEntity` | `src/modules/tutors/entities/tutor-topic.entity.ts` | (see entity file) |
+| Entity                     | File                                                        | Table                |
+| -------------------------- | ----------------------------------------------------------- | -------------------- |
+| `UserEntity`               | `src/modules/users/entities/user.entity.ts`                 | `user`               |
+| `LearnerPreferenceEntity`  | `src/modules/users/entities/learner-preference.entity.ts`   | (learner_preference) |
+| `TutorEntity`              | `src/database/entities/tutor.entity.ts`                     | (see entity file)    |
+| `BookingEntity`            | `src/database/entities/booking.entity.ts`                   | `bookings`           |
+| `TutorAvailabilityEntity`  | `src/modules/tutors/entities/tutor-availability.entity.ts`  | `tutor_availability` |
+| `TutorCourseEntity`        | `src/modules/tutors/entities/tutor-course.entity.ts`        | `tutor_courses`      |
+| `TutorCertificationEntity` | `src/modules/tutors/entities/tutor-certification.entity.ts` | (see entity file)    |
+| `TutorTopicEntity`         | `src/modules/tutors/entities/tutor-topic.entity.ts`         | (see entity file)    |
 
 ### Key entity details
 
 **`UserEntity`** — primary record for all platform users.
+
 - `id`: bigint identity (PK)
 - `clerkId`: varchar 255, unique (external Clerk identifier)
 - `role`: `UserRole` enum (`TUTOR` | `LEARNER`)
@@ -176,6 +177,7 @@ The codebase has a split between legacy and module-scoped entities. **Always reg
 **`TutorEntity`** (legacy, `src/database/entities/tutor.entity.ts`) — tutor profile separate from `UserEntity`. Has `clerkId`, `nombre`, `apellido`. The relationship between `TutorEntity` and `UserEntity` is via `clerkId`. New code should prefer linking via `UserEntity` where possible.
 
 **`BookingEntity`** (`src/database/entities/booking.entity.ts`) — table `bookings`.
+
 - `student` → `UserEntity` (JoinColumn: `student_id`)
 - `tutor` → `TutorEntity` (JoinColumn: `tutor_id`) ← NOTE: links to `TutorEntity`, not `UserEntity`
 - `course` → `TutorCourseEntity` (JoinColumn: `course_id`, nullable)
@@ -184,12 +186,14 @@ The codebase has a split between legacy and module-scoped entities. **Always reg
 - `subject`, `price`, `notes`: nullable
 
 **`TutorAvailabilityEntity`** — recurring weekly slots.
+
 - `dayOfWeek`: `DayOfWeek` enum
 - `startTime`, `endTime`: time strings (e.g. `"09:00:00"`)
 - `tutor` → `UserEntity` (JoinColumn: `tutor_id`) ← links to `UserEntity`, not `TutorEntity`
 - Soft-delete via `deletedAt`
 
 **`TutorCourseEntity`** — courses offered by a tutor.
+
 - `subject`: varchar 100
 - `price`: float (COP)
 - `duration`: int (minutes, default 60)
@@ -260,6 +264,7 @@ export enum BookingStatus {
 ```
 
 State transitions:
+
 - `PENDING_CONFIRMATION` → `CONFIRMED` | `REJECTED` | `EXPIRED`
 - `CONFIRMED` → `COMPLETED` | `NO_SHOW` | `CANCELLED_BY_LEARNER` | `CANCELLED_BY_TUTOR` | `RESCHEDULED`
 
@@ -269,20 +274,21 @@ Active statuses (block availability slots): `PENDING_CONFIRMATION`, `CONFIRMED`.
 
 ## Module Map
 
-| Module | Path | Guards | Description |
-|---|---|---|---|
-| `AuthModule` | `modules/auth/` | — | ClerkJwtGuard, RoleGuard, @Roles decorator |
-| `UsersModule` | `modules/users/` | ClerkJwtGuard | User profile CRUD, learner preferences |
-| `TutorsModule` | `modules/tutors/` | ClerkJwtGuard | Tutor onboarding, courses, availability, certifications |
-| `BookingsModule` | `modules/bookings/` | ClerkJwtGuard | Booking lifecycle + WebSocket gateway |
-| `DashboardModule` | `modules/dashboard/` | ClerkJwtGuard | Metrics for tutor and learner dashboards |
-| `MessagingModule` | `modules/messaging/` | ClerkJwtGuard | Real-time chat channels via Socket.io |
-| `SearchModule` | `modules/search/` | ClerkJwtGuard | Tutor search — stub, Pinecone AI search to be added |
-| `WebhooksModule` | `modules/webhooks/` | Svix signature | Clerk webhook events (user.created, user.updated) |
-| `HealthModule` | `modules/health/` | None | `GET /health` liveness probe |
-| `StorageModule` | `storage/` | — | AWS S3 upload/presign service |
+| Module            | Path                 | Guards         | Description                                             |
+| ----------------- | -------------------- | -------------- | ------------------------------------------------------- |
+| `AuthModule`      | `modules/auth/`      | —              | ClerkJwtGuard, RoleGuard, @Roles decorator              |
+| `UsersModule`     | `modules/users/`     | ClerkJwtGuard  | User profile CRUD, learner preferences                  |
+| `TutorsModule`    | `modules/tutors/`    | ClerkJwtGuard  | Tutor onboarding, courses, availability, certifications |
+| `BookingsModule`  | `modules/bookings/`  | ClerkJwtGuard  | Booking lifecycle + WebSocket gateway                   |
+| `DashboardModule` | `modules/dashboard/` | ClerkJwtGuard  | Metrics for tutor and learner dashboards                |
+| `MessagingModule` | `modules/messaging/` | ClerkJwtGuard  | Real-time chat channels via Socket.io                   |
+| `SearchModule`    | `modules/search/`    | ClerkJwtGuard  | Tutor search — stub, Pinecone AI search to be added     |
+| `WebhooksModule`  | `modules/webhooks/`  | Svix signature | Clerk webhook events (user.created, user.updated)       |
+| `HealthModule`    | `modules/health/`    | None           | `GET /health` liveness probe                            |
+| `StorageModule`   | `storage/`           | —              | AWS S3 upload/presign service                           |
 
 Modules to be created (Sprint 5):
+
 - `FirebaseModule` — global FCM push notification service
 
 ---
@@ -290,10 +296,12 @@ Modules to be created (Sprint 5):
 ## Real-time Events (Socket.io)
 
 **`BookingsGateway`** (`modules/bookings/bookings.gateway.ts`):
+
 - `notifyTutor(tutorClerkId, payload)` — emits to tutor's socket room
 - `notifyLearner(learnerClerkId, payload)` — emits to learner's socket room
 
 **`MessagingGateway`** (`modules/messaging/gateways/messaging.gateway.ts`):
+
 - Handles real-time chat between tutor and learner
 
 Frontend connects to the Socket.io server using the Clerk JWT for authentication.
@@ -372,7 +380,7 @@ AWS_S3_BUCKET=
 
 # Firebase Cloud Messaging
 FIREBASE_PROJECT_ID=
-FIREBASE_PRIVATE_KEY=   
+FIREBASE_PRIVATE_KEY=
 FIREBASE_CLIENT_EMAIL=
 
 # Redis

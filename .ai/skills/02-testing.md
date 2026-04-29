@@ -20,10 +20,10 @@ applies_to: [all modules]
 Use the `should` / `should not` pattern — always a full sentence:
 
 ```typescript
-it('should return tutor dashboard metrics for the current month')
-it('should throw NotFoundException when booking does not exist')
-it('should not allow a learner to access the tutor dashboard')
-it('should return empty arrays when tutor has no activity')
+it('should return tutor dashboard metrics for the current month');
+it('should throw NotFoundException when booking does not exist');
+it('should not allow a learner to access the tutor dashboard');
+it('should return empty arrays when tutor has no activity');
 ```
 
 ---
@@ -52,14 +52,14 @@ it('should return tutor metrics when tutor has completed sessions', async () => 
 
 ## What to Mock
 
-| Mock | Why |
-|---|---|
-| TypeORM repositories (`Repository<Entity>`) | External DB — slow and stateful |
-| Redis client | External cache — stateful |
-| Pinecone client | External vector DB |
-| Claude API client | External AI service |
-| Firebase SDK | External notification service |
-| **DO NOT mock** NestJS services under test | The service IS what you're testing |
+| Mock                                             | Why                                   |
+| ------------------------------------------------ | ------------------------------------- |
+| TypeORM repositories (`Repository<Entity>`)      | External DB — slow and stateful       |
+| Redis client                                     | External cache — stateful             |
+| Pinecone client                                  | External vector DB                    |
+| Claude API client                                | External AI service                   |
+| Firebase SDK                                     | External notification service         |
+| **DO NOT mock** NestJS services under test       | The service IS what you're testing    |
 | **DO NOT mock** DTOs or plain TypeScript classes | They are pure TS — test them for real |
 
 ### Creating mocks
@@ -115,11 +115,13 @@ describe('DashboardController (e2e)', () => {
       imports: [AppModule],
     })
       .overrideGuard(ClerkJwtGuard)
-      .useValue({ canActivate: (ctx) => {
-        const req = ctx.switchToHttp().getRequest();
-        req.user = { clerkId: 'user_test123', role: UserRole.TUTOR };
-        return true;
-      }})
+      .useValue({
+        canActivate: (ctx) => {
+          const req = ctx.switchToHttp().getRequest();
+          req.user = { clerkId: 'user_test123', role: UserRole.TUTOR };
+          return true;
+        },
+      })
       .compile();
 
     app = moduleRef.createNestApplication();
@@ -134,7 +136,7 @@ describe('DashboardController (e2e)', () => {
       .get('/dashboard/tutor')
       .set('Authorization', 'Bearer mock-token')
       .expect(200)
-      .expect(res => {
+      .expect((res) => {
         expect(res.body.metricas).toBeDefined();
         expect(res.body.proximas_sesiones).toBeInstanceOf(Array);
       });
