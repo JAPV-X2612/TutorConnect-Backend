@@ -17,10 +17,10 @@ import { MessagingController } from './messaging.controller';
     TypeOrmModule.forFeature([
       ChatChannelEntity,
       MessageEntity,
-      UserEntity, // ClerkJwtGuard + MessagingService
-      TutorCourseEntity, // course reference on channel
-      TutorEntity, // booking lookup via legacy tutors table
-      BookingEntity, // active-booking check for expiry logic
+      UserEntity,
+      TutorCourseEntity,
+      TutorEntity,
+      BookingEntity,
     ]),
   ],
   controllers: [MessagingController],
