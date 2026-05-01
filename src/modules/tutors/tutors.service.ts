@@ -371,6 +371,7 @@ export class TutorsService {
       duration: dto.duration ?? 60,
       modalidad: dto.modalidad,
       academicLevel: dto.academicLevel,
+      schedule: dto.schedule ?? [],
       isActive: true,
     });
     const saved = await this.courseRepository.save(course);

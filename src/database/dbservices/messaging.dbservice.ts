@@ -64,11 +64,23 @@ export class MessagingDBService {
   async findChannelByParticipants(
     tutorId: number,
     learnerId: number,
+    courseId?: string,
   ): Promise<ChatChannelEntity | null> {
-    return this.channelRepo.findOne({
-      where: { tutor: { id: tutorId }, learner: { id: learnerId } },
-      relations: ['tutor', 'learner', 'course'],
-    });
+    const qb = this.channelRepo
+      .createQueryBuilder('ch')
+      .leftJoinAndSelect('ch.tutor', 'tutor')
+      .leftJoinAndSelect('ch.learner', 'learner')
+      .leftJoinAndSelect('ch.course', 'course')
+      .where('ch.tutor_id = :tutorId', { tutorId })
+      .andWhere('ch.learner_id = :learnerId', { learnerId });
+
+    if (courseId) {
+      qb.andWhere('ch.course_id = :courseId', { courseId });
+    } else {
+      qb.andWhere('ch.course_id IS NULL');
+    }
+
+    return qb.getOne();
   }
 
   async findChannelsByUser(userId: number): Promise<ChatChannelEntity[]> {
