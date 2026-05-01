@@ -26,7 +26,7 @@ import { MessageEntity } from './message.entity';
  * @author TutorConnect Team
  */
 @Entity('chat_channel')
-@Index(['tutor', 'learner'], { unique: true })
+@Index(['tutor', 'learner', 'course'], { unique: true })
 export class ChatChannelEntity {
   @PrimaryGeneratedColumn('identity')
   id: number;

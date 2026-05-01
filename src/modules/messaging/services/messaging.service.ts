@@ -113,6 +113,7 @@ export class MessagingService {
     let channel = await this.messagingDB.findChannelByParticipants(
       tutor.id,
       learner.id,
+      courseId,
     );
 
     if (!channel) {
