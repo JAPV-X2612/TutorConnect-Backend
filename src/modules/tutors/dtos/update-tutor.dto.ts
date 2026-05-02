@@ -3,8 +3,7 @@ import {
   IsOptional,
   IsString,
   IsArray,
-  IsNumber,
-  Min,
+  IsBoolean,
   MaxLength,
 } from 'class-validator';
 
@@ -53,13 +52,6 @@ export class UpdateTutorDto {
 
   @ApiPropertyOptional()
   @IsOptional()
-  @IsNumber()
-  @Min(0)
-  precioHora?: number;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  experienceYears?: number;
+  @IsBoolean()
+  disponible?: boolean;
 }

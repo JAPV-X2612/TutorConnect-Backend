@@ -97,8 +97,19 @@ export class UserEntity {
   @Column({ name: 'interests', type: 'jsonb', nullable: true })
   interests?: string[] | null;
 
+  @Column({ name: 'learning_goal', type: 'varchar', length: 500, nullable: true })
+  learningGoal?: string | null;
+
+  /** 'universitario' | 'colegial' | 'profesional' | 'otro' */
+  @Column({ name: 'student_type', type: 'varchar', length: 50, nullable: true })
+  studentType?: string | null;
+
   @Column({ name: 'current_semester', type: 'int', nullable: true })
   currentSemester?: number | null;
+
+  /** School grade (grado 6–11) — only for colegial student type. */
+  @Column({ name: 'school_grade', type: 'int', nullable: true })
+  schoolGrade?: number | null;
 
   // Tutor-only fields
 
