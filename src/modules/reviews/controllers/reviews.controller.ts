@@ -45,6 +45,19 @@ export class ReviewsController {
     return this.reviewsService.createReview(clerk_id, dto);
   }
 
+  // ── GET /reviews/me ───────────────────────────────────────────────────────
+
+  @Get('me')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(ClerkJwtGuard)
+  @ApiOperation({
+    summary: "List every review submitted by the authenticated learner.",
+  })
+  async getMine(@Req() req: AuthenticatedRequest): Promise<ReviewResponseDto[]> {
+    const { clerk_id } = req.user;
+    return this.reviewsService.getMyReviews(clerk_id);
+  }
+
   // ── GET /reviews/booking/:bookingId ───────────────────────────────────────
 
   @Get('booking/:bookingId')
