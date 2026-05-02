@@ -27,7 +27,8 @@
     "migration:generate": "npm run typeorm -- migration:generate",
     "migration:run": "npm run typeorm -- migration:run",
     "migration:revert": "npm run typeorm -- migration:revert",
-    "seed": "ts-node --project tsconfig.seed.json src/database/seeds/tutors.seed.ts"
+    "seed": "ts-node --project tsconfig.seed.json src/database/seeds/tutors.seed.ts",
+    "seed:search-demo": "ts-node --project tsconfig.seed.json src/database/seeds/search-demo.seed.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1029.0",

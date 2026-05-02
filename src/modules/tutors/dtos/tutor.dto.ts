@@ -26,10 +26,6 @@ export class TutorDto {
   @Expose()
   rating?: number;
 
-  @ApiProperty({ example: 3, required: false })
-  @Expose()
-  experienceYears?: number;
-
   @ApiProperty({ example: '2026-02-17T18:05:02.000Z' })
   @Expose()
   createdAt: Date;

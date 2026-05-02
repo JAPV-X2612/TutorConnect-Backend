@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString, IsArray, MaxLength } from 'class-validator';
+import { IsOptional, IsString, IsArray, MaxLength, IsInt, Min } from 'class-validator';
 
 /**
  * Data transfer object for partially updating a user's own profile.
@@ -41,4 +41,28 @@ export class UpdateUserDto {
   @IsArray()
   @IsString({ each: true })
   interests?: string[];
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  learningGoal?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  studentType?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  currentSemester?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  schoolGrade?: number;
 }

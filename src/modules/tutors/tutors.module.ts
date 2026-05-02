@@ -9,6 +9,7 @@ import { StorageModule } from '../../storage/storage.module';
 import { TutorTopicEntity } from './entities/tutor-topic.entity';
 import { TutorCourseEntity } from './entities/tutor-course.entity';
 import { UserEntity } from '../users/entities/user.entity';
+import { SearchModule } from '../search/search.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { UserEntity } from '../users/entities/user.entity';
       UserEntity,
     ]),
     StorageModule,
+    SearchModule,
   ],
   controllers: [TutorsController],
   providers: [TutorsService, TutorsDBService],

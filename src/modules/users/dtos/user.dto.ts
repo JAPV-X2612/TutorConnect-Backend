@@ -69,7 +69,19 @@ export class UserDto {
   @Expose()
   interests?: string[] | null;
 
+  @ApiPropertyOptional({ example: 'Quiero aprender cálculo para ingeniería' })
+  @Expose()
+  learningGoal?: string | null;
+
+  @ApiPropertyOptional({ example: 'universitario' })
+  @Expose()
+  studentType?: string | null;
+
   @ApiPropertyOptional({ example: 4 })
   @Expose()
   currentSemester?: number | null;
+
+  @ApiPropertyOptional({ example: 10 })
+  @Expose()
+  schoolGrade?: number | null;
 }
