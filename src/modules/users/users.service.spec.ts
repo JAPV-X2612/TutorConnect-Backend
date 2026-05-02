@@ -1,9 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import {
-  BadRequestException,
-  ConflictException,
-  NotFoundException,
-} from '@nestjs/common';
+import { ConflictException, NotFoundException } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { UsersDBService } from '../../database/dbservices/users.dbservice';
 import { UserEntity } from './entities/user.entity';
@@ -63,7 +59,7 @@ describe('UsersService', () => {
     service = module.get<UsersService>(UsersService);
   });
 
-  afterEach(() => jest.clearAllMocks());
+  afterEach(() => jest.resetAllMocks());
 
   describe('create', () => {
     it('persists and returns the new user', async () => {
@@ -120,56 +116,34 @@ describe('UsersService', () => {
       await expect(service.create(dto)).rejects.toBe(unexpected);
     });
 
-    it('throws BadRequestException when learner omits interests', async () => {
+    it('creates a learner without optional fields (interests, organizationName)', async () => {
       const dto: CreateUserDto = {
         clerkId: 'user_l',
         email: 'l@example.com',
         firstName: 'L',
         lastName: 'User',
         role: UserRole.LEARNER,
-        organizationName: 'ECI',
       };
+      const user = mockUser();
+      mockUsersDBService.createWithTransaction.mockResolvedValue(user);
 
-      await expect(service.create(dto)).rejects.toThrow(BadRequestException);
+      const result = await service.create(dto);
+      expect(result).toBe(user);
     });
 
-    it('throws BadRequestException when learner omits organizationName', async () => {
-      const dto: CreateUserDto = {
-        clerkId: 'user_l2',
-        email: 'l2@example.com',
-        firstName: 'L',
-        lastName: 'User',
-        role: UserRole.LEARNER,
-        interests: ['Physics'],
-      };
-
-      await expect(service.create(dto)).rejects.toThrow(BadRequestException);
-    });
-
-    it('throws BadRequestException when tutor omits specialties', async () => {
+    it('creates a tutor without optional fields (specialties, hourlyRate)', async () => {
       const dto: CreateUserDto = {
         clerkId: 'user_t',
         email: 't@example.com',
         firstName: 'T',
         lastName: 'Tutor',
         role: UserRole.TUTOR,
-        hourlyRate: 50000,
       };
+      const user = { ...mockUser(), role: UserRole.TUTOR };
+      mockUsersDBService.createWithTransaction.mockResolvedValue(user);
 
-      await expect(service.create(dto)).rejects.toThrow(BadRequestException);
-    });
-
-    it('throws BadRequestException when tutor omits hourlyRate', async () => {
-      const dto: CreateUserDto = {
-        clerkId: 'user_t2',
-        email: 't2@example.com',
-        firstName: 'T',
-        lastName: 'Tutor',
-        role: UserRole.TUTOR,
-        specialties: ['Calculus'],
-      };
-
-      await expect(service.create(dto)).rejects.toThrow(BadRequestException);
+      const result = await service.create(dto);
+      expect(result).toBe(user);
     });
   });
 

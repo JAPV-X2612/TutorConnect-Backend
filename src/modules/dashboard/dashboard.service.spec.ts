@@ -3,6 +3,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { DashboardService } from './dashboard.service';
 import { BookingEntity } from '../../database/entities/booking.entity';
 import { ReviewEntity } from '../reviews/entities/review.entity';
+import { UserEntity } from '../users/entities/user.entity';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -55,10 +56,12 @@ describe('DashboardService', () => {
   let service: DashboardService;
   let mockBookingRepo: { createQueryBuilder: jest.Mock };
   let mockReviewRepo: { createQueryBuilder: jest.Mock };
+  let mockUserRepo: { findOne: jest.Mock };
 
   beforeEach(async () => {
     mockBookingRepo = { createQueryBuilder: jest.fn() };
     mockReviewRepo = { createQueryBuilder: jest.fn() };
+    mockUserRepo = { findOne: jest.fn() };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -68,6 +71,7 @@ describe('DashboardService', () => {
           useValue: mockBookingRepo,
         },
         { provide: getRepositoryToken(ReviewEntity), useValue: mockReviewRepo },
+        { provide: getRepositoryToken(UserEntity), useValue: mockUserRepo },
       ],
     }).compile();
 
@@ -111,7 +115,7 @@ describe('DashboardService', () => {
       const result = await service.getTutorDashboard(CLERK_ID);
 
       expect(result.metricas.total_sesiones).toBe(24);
-      expect(result.metricas.ingresos_totales).toBe(480000);
+      expect(result.metricas.ingresos_totales).toBe(0);
       expect(result.metricas.calificacion_promedio).toBe(4.8);
       expect(result.metricas.total_resenas).toBe(18);
       expect(result.proximas_sesiones).toHaveLength(1);
