@@ -31,7 +31,7 @@ services:
     container_name: tutorconnect-backend
     restart: unless-stopped
     environment:
-      NODE_ENV: development
+      NODE_ENV: production
       PORT: 3000
       DATABASE_URL: postgresql://postgres:postgres123@postgres:5432/tutorconnect
       DATABASE_HOST: postgres

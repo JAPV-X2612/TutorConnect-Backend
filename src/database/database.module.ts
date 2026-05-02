@@ -17,7 +17,7 @@ import { DatabaseService } from './database.service';
         password: configService.get<string>('database.password'),
         database: configService.get<string>('database.name'),
         autoLoadEntities: true,
-        synchronize: process.env.NODE_ENV !== 'production',
+        synchronize: process.env.DATABASE_SYNCHRONIZE === 'true' || process.env.NODE_ENV !== 'production',
         logging: process.env.NODE_ENV !== 'production',
       }),
     }),
