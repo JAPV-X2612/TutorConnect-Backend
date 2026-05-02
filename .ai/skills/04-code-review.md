@@ -87,6 +87,7 @@ applies_to: [all modules]
 ## Feedback Tone
 
 When giving feedback, distinguish between:
+
 - **Must fix:** blocks merge (security violation, broken test, `clerkId` from body, `any` type)
 - **Should fix:** strongly recommended (missing JSDoc, coverage gap, naming issue)
 - **Consider:** optional improvement (style preference, minor refactor opportunity)

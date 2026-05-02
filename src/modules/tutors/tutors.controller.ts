@@ -14,7 +14,6 @@ import {
   UseGuards,
   UseInterceptors,
   UploadedFile,
-  ParseUUIDPipe,
   BadRequestException,
   Logger,
 } from '@nestjs/common';

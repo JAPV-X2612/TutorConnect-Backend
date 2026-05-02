@@ -25,7 +25,9 @@ import { MessagingService } from '../services/messaging.service';
  * @author TutorConnect Team
  */
 @WebSocketGateway({ cors: { origin: '*' }, namespace: '/messages' })
-export class MessagingGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export class MessagingGateway
+  implements OnGatewayConnection, OnGatewayDisconnect
+{
   @WebSocketServer()
   server: Server;
 
@@ -71,7 +73,9 @@ export class MessagingGateway implements OnGatewayConnection, OnGatewayDisconnec
       // Validates participant access and checks expiry.
       await this.messagingService.assertChannelAccess(data.channelId, clerkId);
     } catch (err: any) {
-      client.emit('channel:error', { message: err?.message ?? 'No se puede acceder al canal' });
+      client.emit('channel:error', {
+        message: err?.message ?? 'No se puede acceder al canal',
+      });
       return;
     }
 
@@ -102,7 +106,9 @@ export class MessagingGateway implements OnGatewayConnection, OnGatewayDisconnec
       );
       this.server.to(`channel:${data.channelId}`).emit('message:new', message);
     } catch (err: any) {
-      client.emit('error', { message: err?.message ?? 'Failed to send message' });
+      client.emit('error', {
+        message: err?.message ?? 'Failed to send message',
+      });
     }
   }
 

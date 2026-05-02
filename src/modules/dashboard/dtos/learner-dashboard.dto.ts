@@ -11,7 +11,10 @@ export class WeeklyProgressDto {
   @Expose()
   completed: number;
 
-  @ApiProperty({ description: 'Total sessions scheduled this week', example: 5 })
+  @ApiProperty({
+    description: 'Total sessions scheduled this week',
+    example: 5,
+  })
   @Expose()
   total: number;
 }
@@ -28,7 +31,8 @@ export class UpcomingSessionDto {
 
   @ApiProperty({
     example: 'Álgebra Lineal',
-    description: 'Subject or topic of the session. Derived from the tutor primary subject.',
+    description:
+      'Subject or topic of the session. Derived from the tutor primary subject.',
   })
   @Expose()
   subject: string;

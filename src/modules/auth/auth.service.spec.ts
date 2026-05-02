@@ -15,7 +15,10 @@ describe('AuthService', () => {
 
   describe('getMe', () => {
     it('returns clerk_id, role, and session_activa=true', () => {
-      const result = service.getMe({ clerk_id: 'user_abc', role: UserRole.TUTOR });
+      const result = service.getMe({
+        clerk_id: 'user_abc',
+        role: UserRole.TUTOR,
+      });
       expect(result).toEqual({
         clerk_id: 'user_abc',
         role: UserRole.TUTOR,

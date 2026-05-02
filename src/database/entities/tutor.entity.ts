@@ -58,12 +58,6 @@ export class TutorEntity {
   @Column({ type: 'float', nullable: true })
   rating?: number;
 
-  @Column({ type: 'int', nullable: true })
-  experienceYears?: number;
-
-  @Column({ type: 'float', nullable: true, name: 'precio_hora' })
-  precioHora?: number;
-
   @Column({ type: 'boolean', default: false })
   disponible!: boolean;
 

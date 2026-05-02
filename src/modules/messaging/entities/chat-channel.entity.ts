@@ -26,7 +26,7 @@ import { MessageEntity } from './message.entity';
  * @author TutorConnect Team
  */
 @Entity('chat_channel')
-@Index(['tutor', 'learner'], { unique: true })
+@Index(['tutor', 'learner', 'course'], { unique: true })
 export class ChatChannelEntity {
   @PrimaryGeneratedColumn('identity')
   id: number;
@@ -39,7 +39,11 @@ export class ChatChannelEntity {
    * Expiry for pre-booking channels (24 h from creation).
    * Null once a booking is confirmed — channel is then permanent.
    */
-  @Column({ name: 'expires_at', type: 'timestamp with time zone', nullable: true })
+  @Column({
+    name: 'expires_at',
+    type: 'timestamp with time zone',
+    nullable: true,
+  })
   expiresAt: Date | null;
 
   @CreateDateColumn({ name: 'created_at' })
@@ -54,7 +58,11 @@ export class ChatChannelEntity {
   // ── Relations ────────────────────────────────────────────────────────────────
 
   /** Course the conversation is about — set on creation and never changed. */
-  @ManyToOne(() => TutorCourseEntity, { onDelete: 'SET NULL', nullable: true, eager: false })
+  @ManyToOne(() => TutorCourseEntity, {
+    onDelete: 'SET NULL',
+    nullable: true,
+    eager: false,
+  })
   @JoinColumn({ name: 'course_id' })
   course: TutorCourseEntity | null;
 

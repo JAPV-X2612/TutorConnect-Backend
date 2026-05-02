@@ -14,7 +14,7 @@ import {
 import type { Request } from 'express';
 import { ClerkJwtGuard } from '../auth/clerk-jwt.guard';
 import { MessagingService } from './services/messaging.service';
-import { CreateChannelDto } from './dto/requests/create-channel.dto';
+import { CreateChannelDto } from './dtos/requests/create-channel.dto';
 
 /**
  * REST controller for MOD-MSG-005 (Messaging).
@@ -48,7 +48,11 @@ export class MessagingController {
   @HttpCode(HttpStatus.OK)
   async getOrCreateChannel(@Req() req: Request, @Body() dto: CreateChannelDto) {
     const { clerk_id } = (req as any).user;
-    return this.messagingService.getOrCreateChannel(clerk_id, dto.otherClerkId, dto.courseId);
+    return this.messagingService.getOrCreateChannel(
+      clerk_id,
+      dto.otherClerkId,
+      dto.courseId,
+    );
   }
 
   /**

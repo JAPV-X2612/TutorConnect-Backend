@@ -1,144 +1,66 @@
-# 🚀 Inicio Rápido - TutorConnect Backend con Docker
+# Quick Start — TutorConnect Backend
 
-## 📋 Requisitos Previos
+## Prerequisites
 
-### 1. Node.js (Obligatorio)
-- **Versión**: Node.js 18 o superior
-- **Descargar**: https://nodejs.org/
-- **Verificar**: `node --version`
-
-### 2. Docker Desktop (Obligatorio para usar Docker)
-- **Descargar**: https://www.docker.com/products/docker-desktop/
-- **Instalar**: Ejecuta el instalador y reinicia tu PC si es necesario
-- **Verificar**: `docker --version` y `docker-compose --version`
-
-> ⚠️ **IMPORTANTE**: Si no tienes Docker instalado, debes instalarlo primero antes de continuar con las opciones de Docker.
+- **Node.js** 20+ — [nodejs.org](https://nodejs.org/)
+- **Docker Desktop** — [docker.com](https://www.docker.com/products/docker-desktop/)
 
 ---
 
-## Opción 1: Todo con Docker (Más Fácil) ⭐
-
-### Paso 1: Instalar Dependencias
+## Option A: Full Docker (recommended)
 
 ```bash
 npm install
-```
-
-### Paso 2: Iniciar Todo
-
-```bash
 npm run docker:up
 ```
 
-Esto iniciará:
-- ✅ PostgreSQL en puerto 5432
-- ✅ Backend en puerto 3000
+Starts PostgreSQL on port `5432` and the backend on port `3000`.
 
-### Paso 3: Verificar
-
-Abre tu navegador en: http://localhost:3000/health
-
-**Respuesta esperada:**
-```json
-{
-  "status": "ok",
-  "database": { "status": "connected" }
-}
-```
-
-### ¡Listo! 🎉
+Verify: http://localhost:3000/api/health
 
 ---
 
-## Opción 2: PostgreSQL en Docker + App Local
-
-### Paso 1: Instalar Dependencias
+## Option B: Docker DB + local app
 
 ```bash
 npm install
-```
-
-### Paso 2: Iniciar PostgreSQL
-
-```bash
-npm run docker:dev
-```
-
-### Paso 3: Iniciar la App
-
-```bash
-npm run start:dev
-```
-
-### Paso 4: Verificar
-
-Abre: http://localhost:3000/health
-
----
-
-## 📋 Comandos Útiles
-
-```bash
-# Ver logs
-npm run docker:logs
-
-# Detener todo
-npm run docker:down
-
-# Reiniciar (reconstruir)
-npm run docker:build
-
-# Ver estado
-docker-compose ps
+npm run docker:dev        # starts PostgreSQL only
+npm run start:dev         # starts the app with hot reload
 ```
 
 ---
 
-## 🗄️ Conectar a PostgreSQL
+## Useful commands
 
-**Credenciales:**
-```
-Host: localhost
-Puerto: 5432
-Base de datos: tutorconnect
-Usuario: postgres
-Contraseña: postgres123
+```bash
+npm run docker:logs       # stream logs
+npm run docker:down       # stop all services
+npm run docker:build      # stop, rebuild, and restart
+docker compose ps         # container status
 ```
 
-**Desde Docker:**
+---
+
+## PostgreSQL connection
+
+```
+Host:     localhost
+Port:     5432
+Database: tutorconnect
+User:     postgres
+Password: postgres123
+```
+
 ```bash
 docker exec -it tutorconnect-postgres psql -U postgres -d tutorconnect
 ```
 
 ---
 
-## ⚠️ Problemas Comunes
+## Common issues
 
-### Puerto 5432 ya en uso
+**Port 5432 in use** — stop local PostgreSQL, or change host port to `5433:5432` in `docker-compose.yml`.
 
-Ya tienes PostgreSQL corriendo localmente. Opciones:
+**Port 3000 in use** — change host port in `docker-compose.yml`.
 
-1. Detenerlo temporalmente
-2. Cambiar puerto en `docker-compose.yml` a `5433:5432`
-
-### Puerto 3000 ya en uso
-
-Cambiar puerto en `docker-compose.yml` o en `.env`
-
-### No aparece "database connected"
-
-1. Espera 10 segundos (PostgreSQL está iniciando)
-2. Revisa logs: `npm run docker:logs`
-3. Reinicia: `npm run docker:down && npm run docker:up`
-
----
-
-## 📚 Documentación Completa
-
-- **General**: Ver [README.md](./README.md)
-- **Docker**: Ver [DOCKER.md](./DOCKER.md)
-
----
-
-¿Problemas? Abre un issue en el repositorio.
-
+**Health check not responding** — wait 10 s for PostgreSQL to initialize, then check logs: `npm run docker:logs`.

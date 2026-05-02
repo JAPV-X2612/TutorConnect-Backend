@@ -203,7 +203,7 @@ describe('UsersService', () => {
   });
 
   describe('update', () => {
-    it('applies the dto fields and returns the saved entity', async () => {
+    it('applies the dtos fields and returns the saved entity', async () => {
       const user = mockUser();
       const dto: UpdateUserDto = { firstName: 'Updated' };
       mockRepo.findOne.mockResolvedValue(user);

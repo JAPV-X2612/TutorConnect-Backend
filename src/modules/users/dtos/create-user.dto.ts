@@ -132,15 +132,38 @@ export class CreateUserDto {
   @Expose()
   interests?: string[];
 
+  @ApiPropertyOptional({ example: 'Quiero aprender cálculo para ingeniería civil' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  @Expose()
+  learningGoal?: string;
+
   /**
    * Current academic semester of the learner (1-based).
    */
+  /** 'universitario' | 'colegial' | 'profesional' | 'otro' */
+  @ApiPropertyOptional({ example: 'universitario' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  @Expose()
+  studentType?: string;
+
   @ApiPropertyOptional({ example: 5 })
   @IsOptional()
   @IsInt()
   @Min(1)
   @Expose()
   currentSemester?: number;
+
+  /** School grade 6–11 — for colegial student type. */
+  @ApiPropertyOptional({ example: 10 })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Expose()
+  schoolGrade?: number;
 
   // ── Tutor-specific fields ─────────────────────────────────────────────────────
 

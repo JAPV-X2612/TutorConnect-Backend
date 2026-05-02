@@ -2,7 +2,7 @@ import 'reflect-metadata';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { DataSource } from 'typeorm';
-import { UserEntity } from '../../users/entities/user.entity';
+import { UserEntity } from '../../modules/users/entities/user.entity';
 import { TutorEntity } from '../entities/tutor.entity';
 import { CertificacionEntity } from '../entities/certificacion.entity';
 import { BookingEntity } from '../entities/booking.entity';
@@ -50,8 +50,6 @@ interface SeedTutor {
   bio: string;
   subjects: string[];
   rating: number;
-  precioHora: number;
-  experienceYears: number;
   disponible: boolean;
 }
 
@@ -64,8 +62,6 @@ const SEED_TUTORS: SeedTutor[] = [
     bio: 'Profesora de matemáticas y física con 8 años de experiencia universitaria.',
     subjects: ['Matemáticas', 'Física'],
     rating: 4.9,
-    precioHora: 25,
-    experienceYears: 8,
     disponible: true,
   },
   {
@@ -76,8 +72,6 @@ const SEED_TUTORS: SeedTutor[] = [
     bio: 'Desarrollador full-stack con experiencia en Python y JavaScript.',
     subjects: ['Programación'],
     rating: 4.8,
-    precioHora: 35,
-    experienceYears: 5,
     disponible: false,
   },
   {
@@ -88,8 +82,6 @@ const SEED_TUTORS: SeedTutor[] = [
     bio: 'Profesor nativo de inglés especializado en inglés de negocios.',
     subjects: ['Inglés'],
     rating: 5.0,
-    precioHora: 22,
-    experienceYears: 6,
     disponible: true,
   },
 ];
@@ -106,7 +98,6 @@ async function seed(): Promise<void> {
     });
 
     if (existingTutor) {
-      existingTutor.precioHora = data.precioHora;
       existingTutor.disponible = data.disponible;
       existingTutor.estado = EstadoTutor.VERIFICADO;
       await tutorRepo.save(existingTutor);
@@ -122,8 +113,6 @@ async function seed(): Promise<void> {
       bio: data.bio,
       subjects: data.subjects,
       rating: data.rating,
-      precioHora: data.precioHora,
-      experienceYears: data.experienceYears,
       disponible: data.disponible,
       estado: EstadoTutor.VERIFICADO,
     });

@@ -1,1 +1,1 @@
-export { UserEntity } from '../../users/entities/user.entity';
+export { UserEntity } from '../../modules/users/entities/user.entity';

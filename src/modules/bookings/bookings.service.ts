@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   forwardRef,
   Inject,
@@ -54,6 +55,27 @@ export class BookingsService {
     }
 
     const endTime = new Date(startTime.getTime() + course.duration * 60_000);
+
+    // Block if tutor already has a CONFIRMED booking in this slot.
+    const tutorConflict = await this.hasConflict({
+      tutorId: course.tutor.id,
+      startTime,
+      endTime,
+      confirmedOnly: true,
+    });
+    if (tutorConflict.conflict) {
+      throw new ConflictException('El tutor ya tiene una clase confirmada en ese horario');
+    }
+
+    // Block if this student already has any active booking (pending or confirmed) in this slot.
+    const studentConflict = await this.hasConflict({
+      studentId: learner.id,
+      startTime,
+      endTime,
+    });
+    if (studentConflict.conflict) {
+      throw new ConflictException('Ya tienes una clase reservada en ese horario');
+    }
 
     const booking = this.bookingRepository.create({
       student: learner,
@@ -130,15 +152,48 @@ export class BookingsService {
       relations: ['tutor', 'student', 'course'],
     });
     if (!booking) throw new NotFoundException('Reserva no encontrada');
-    if (booking.tutor.id !== tutor.id) throw new ForbiddenException('Acceso denegado');
+    if (booking.tutor.id !== tutor.id)
+      throw new ForbiddenException('Acceso denegado');
     if (booking.status !== 'pending') {
       throw new BadRequestException(
         'Solo se pueden gestionar reservas pendientes',
       );
     }
 
+    if (status === 'confirmed') {
+      if (!booking.endTime) throw new BadRequestException('Reserva sin hora de fin');
+
+      // Ensure no confirmed booking already occupies this slot.
+      const { conflict, who } = await this.hasConflict({
+        tutorId: tutor.id,
+        studentId: booking.student?.id,
+        startTime: booking.startTime,
+        endTime: booking.endTime,
+        excludeBookingId: booking.id,
+        confirmedOnly: true,
+      });
+      if (conflict) {
+        throw new ConflictException(
+          who === 'tutor'
+            ? 'Ya tienes otra clase confirmada en ese horario'
+            : 'El estudiante ya tiene otra clase confirmada en ese horario',
+        );
+      }
+    }
+
     booking.status = status;
     const saved = await this.bookingRepository.save(booking);
+
+    // Auto-cancel other pending requests from different students in the same slot.
+    if (status === 'confirmed' && booking.endTime) {
+      await this.cancelOverlappingPending(
+        tutor.id,
+        booking.startTime,
+        booking.endTime,
+        booking.id,
+      );
+    }
+
     const result = this.formatBooking(saved, {
       includeLearner: true,
       includeCourse: true,
@@ -164,7 +219,8 @@ export class BookingsService {
       relations: ['student', 'tutor', 'course'],
     });
     if (!booking) throw new NotFoundException('Reserva no encontrada');
-    if (booking.student.id !== learner.id) throw new ForbiddenException('Acceso denegado');
+    if (booking.student.id !== learner.id)
+      throw new ForbiddenException('Acceso denegado');
     if (booking.status === 'completed' || booking.status === 'cancelled') {
       throw new BadRequestException('No se puede cancelar esta reserva');
     }
@@ -178,6 +234,85 @@ export class BookingsService {
     // Notify tutor that the learner cancelled.
     this.gateway.notifyTutor(booking.tutor.clerkId, result);
     return result;
+  }
+
+  // ── Conflict detection ────────────────────────────────────────────────────
+
+  /**
+   * Returns true if an active booking (pending or confirmed) overlaps the
+   * given [startTime, endTime) interval for the specified tutor or student.
+   *
+   * Two intervals overlap when: existingStart < newEnd AND existingEnd > newStart
+   */
+  private async hasConflict(opts: {
+    tutorId?: string;
+    studentId?: string | number | bigint;
+    startTime: Date;
+    endTime: Date;
+    excludeBookingId?: string;
+    confirmedOnly?: boolean;
+  }): Promise<{ conflict: boolean; who: 'tutor' | 'student' | null }> {
+    const statuses = opts.confirmedOnly ? ['confirmed'] : ['pending', 'confirmed'];
+
+    const qb = this.bookingRepository
+      .createQueryBuilder('b')
+      .where('b.status IN (:...statuses)', { statuses })
+      .andWhere('b.startTime < :endTime', { endTime: opts.endTime })
+      .andWhere('b.endTime > :startTime', { startTime: opts.startTime });
+
+    if (opts.excludeBookingId) {
+      qb.andWhere('b.id != :excludeId', { excludeId: opts.excludeBookingId });
+    }
+
+    if (opts.tutorId) {
+      const count = await qb
+        .clone()
+        .andWhere('b.tutor_id = :tutorId', { tutorId: opts.tutorId })
+        .getCount();
+      if (count > 0) return { conflict: true, who: 'tutor' };
+    }
+
+    if (opts.studentId) {
+      const count = await qb
+        .clone()
+        .andWhere('b.student_id = :studentId', { studentId: opts.studentId })
+        .getCount();
+      if (count > 0) return { conflict: true, who: 'student' };
+    }
+
+    return { conflict: false, who: null };
+  }
+
+  /**
+   * Cancels all pending bookings for the same tutor that overlap with the
+   * confirmed booking's interval, excluding the confirmed booking itself.
+   */
+  private async cancelOverlappingPending(
+    tutorId: string,
+    startTime: Date,
+    endTime: Date,
+    excludeBookingId: string,
+  ): Promise<void> {
+    const overlapping = await this.bookingRepository
+      .createQueryBuilder('b')
+      .where('b.tutor_id = :tutorId', { tutorId })
+      .andWhere('b.status = :status', { status: 'pending' })
+      .andWhere('b.startTime < :endTime', { endTime })
+      .andWhere('b.endTime > :startTime', { startTime })
+      .andWhere('b.id != :excludeId', { excludeId: excludeBookingId })
+      .getMany();
+
+    for (const b of overlapping) {
+      b.status = 'cancelled';
+      await this.bookingRepository.save(b);
+      if (b.student?.clerkId) {
+        this.gateway.notifyLearner(b.student.clerkId, {
+          bookingId: b.id,
+          status: 'cancelled',
+          reason: 'El tutor confirmó otra reserva en el mismo horario',
+        });
+      }
+    }
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────
