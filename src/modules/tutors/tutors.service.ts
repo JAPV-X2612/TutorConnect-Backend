@@ -245,6 +245,40 @@ export class TutorsService {
     return this.uploadCertificacion(tutor.id, clerkId, file);
   }
 
+  async confirmCertificationUpload(
+    clerkId: string,
+    s3Key: string,
+    fileName: string,
+    mimeType: string,
+  ): Promise<{ id: string; nombre_archivo: string; s3_url: string; mime_type: string }> {
+    const tutor = await this.findByClerkId(clerkId);
+    const existing = await this.tutorRepository.findOne({
+      where: { id: tutor.id },
+      relations: ['certificaciones'],
+    });
+    if (!existing) throw new NotFoundException('Tutor no encontrado');
+    if (existing.certificaciones.length >= MAX_CERTIFICACIONES) {
+      throw new BadRequestException('No se pueden subir más de 10 certificaciones');
+    }
+
+    const cert = this.certRepository.create({
+      tutor: existing,
+      nombreArchivo: fileName,
+      s3Key,
+      s3Url: null,
+      mimeType,
+    });
+    const savedCert = await this.certRepository.save(cert);
+    const s3Url = await this.storageService.getPresignedUrl(s3Key, 900);
+
+    return {
+      id: savedCert.id,
+      nombre_archivo: savedCert.nombreArchivo,
+      s3_url: s3Url,
+      mime_type: savedCert.mimeType,
+    };
+  }
+
   // ── GET /tutors/:id/certificaciones ──────────────────────────────────────
 
   async getCertificaciones(tutorId: string): Promise<

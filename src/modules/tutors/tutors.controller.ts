@@ -32,12 +32,16 @@ import { UpdateTutorDto } from './dtos/update-tutor.dto';
 import { RegisterTutorDto } from './dtos/register-tutor.dto';
 import { ClerkJwtGuard } from '../auth/clerk-jwt.guard';
 import { CreateCourseDto } from './dtos/create-course.dto';
+import { StorageService } from '../../storage/storage.service';
 
 @Controller('tutors')
 export class TutorsController {
   private readonly logger = new Logger(TutorsController.name);
 
-  constructor(private readonly tutorsService: TutorsService) {}
+  constructor(
+    private readonly tutorsService: TutorsService,
+    private readonly storageService: StorageService,
+  ) {}
 
   // ── GET /tutors/me ───────────────────────────────────────────────────────
 
@@ -108,6 +112,43 @@ export class TutorsController {
   async deleteCourse(@Param('courseId') courseId: string, @Req() req: Request) {
     const { clerk_id } = (req as any).user;
     return this.tutorsService.deleteCourse(courseId, clerk_id);
+  }
+
+  // ── GET /tutors/me/certifications/upload-url ─────────────────────────────
+
+  @Get('me/certifications/upload-url')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(ClerkJwtGuard)
+  async getCertificationUploadUrl(
+    @Query('mimeType') mimeType: string,
+    @Query('fileName') fileName: string,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    if (!mimeType || !fileName) {
+      throw new BadRequestException('mimeType and fileName are required');
+    }
+    const { clerk_id } = req.user;
+    const key = `certifications/${clerk_id}/${Date.now()}-${fileName}`;
+    const presigned = await this.storageService.getPresignedUploadUrl(key, mimeType);
+    return { key, ...presigned };
+  }
+
+  // ── POST /tutors/me/certifications/confirm ───────────────────────────────
+
+  @Post('me/certifications/confirm')
+  @HttpCode(HttpStatus.CREATED)
+  @UseGuards(ClerkJwtGuard)
+  async confirmCertificationUpload(
+    @Body() body: { key: string; fileName: string; mimeType: string },
+    @Req() req: AuthenticatedRequest,
+  ) {
+    const { clerk_id } = req.user;
+    return this.tutorsService.confirmCertificationUpload(
+      clerk_id,
+      body.key,
+      body.fileName,
+      body.mimeType,
+    );
   }
 
   // ── POST /tutors/me/certifications ───────────────────────────────────────
