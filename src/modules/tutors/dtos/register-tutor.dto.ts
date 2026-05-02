@@ -5,8 +5,6 @@ import {
   IsEmail,
   MaxLength,
   IsArray,
-  IsNumber,
-  Min,
 } from 'class-validator';
 
 export class RegisterTutorDto {
@@ -41,14 +39,4 @@ export class RegisterTutorDto {
   @IsArray()
   @IsString({ each: true })
   especialidades?: string[];
-
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  tarifa_hora?: number;
-
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  experiencia_years?: number;
 }

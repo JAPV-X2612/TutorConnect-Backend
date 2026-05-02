@@ -41,10 +41,20 @@ export class CreateCourseDto {
   @MaxLength(100)
   subject: string;
 
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(500)
+  description: string;
+
   @IsOptional()
   @IsString()
   @MaxLength(500)
-  description?: string;
+  objectives?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  experienceYears?: number;
 
   @IsNumber()
   @Min(1)
