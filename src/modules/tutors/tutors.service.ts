@@ -13,6 +13,7 @@ import { TutorEntity } from '../../database/entities/tutor.entity';
 import { CertificacionEntity } from '../../database/entities/certificacion.entity';
 import { TutorCourseEntity } from './entities/tutor-course.entity';
 import { StorageService } from '../../storage/storage.service';
+import { SearchService } from '../search/search.service';
 import { CreateTutorDto } from './dtos/create-tutor.dto';
 import { UpdateTutorDto } from './dtos/update-tutor.dto';
 import { RegisterTutorDto } from './dtos/register-tutor.dto';
@@ -40,6 +41,7 @@ export class TutorsService {
     @InjectRepository(UserEntity)
     private readonly userRepository: Repository<UserEntity>,
     private readonly storageService: StorageService,
+    private readonly searchService: SearchService,
   ) {}
 
   // ── GET /tutors/me ───────────────────────────────────────────────────────
@@ -53,8 +55,6 @@ export class TutorsService {
     descripcion?: string;
     bio?: string;
     subjects?: string[];
-    precioHora?: number;
-    experienceYears?: number;
     estado?: string;
     disponible?: boolean;
     rating?: number;
@@ -79,8 +79,6 @@ export class TutorsService {
       descripcion: tutor.descripcion,
       bio: tutor.bio,
       subjects: tutor.subjects,
-      precioHora: tutor.precioHora,
-      experienceYears: tutor.experienceYears,
       estado: tutor.estado,
       disponible: tutor.disponible,
       rating: tutor.rating,
@@ -119,8 +117,6 @@ export class TutorsService {
       cedula: dto.cedula,
       descripcion: dto.descripcion,
       subjects: dto.especialidades ?? [],
-      precioHora: dto.tarifa_hora ?? 0,
-      experienceYears: dto.experiencia_years,
       estado: EstadoTutor.PENDIENTE,
     });
 
@@ -292,7 +288,6 @@ export class TutorsService {
       email: dto.email,
       bio: dto.bio,
       subjects: dto.subjects,
-      experienceYears: dto.experienceYears,
     } as any);
 
     const saved = await this.tutorRepository.save(tutor as any);
@@ -327,15 +322,23 @@ export class TutorsService {
   async update(id: string, dto: UpdateTutorDto): Promise<TutorEntity> {
     const tutor = await this.findOne(id);
 
+    // Track whether any field that appears in the course embedding document changed.
+    const embeddingAffected =
+      (dto.nombre !== undefined && dto.nombre !== tutor.nombre) ||
+      (dto.apellido !== undefined && dto.apellido !== tutor.apellido) ||
+      (dto.bio !== undefined && dto.bio !== tutor.bio) ||
+      (dto.descripcion !== undefined && dto.descripcion !== tutor.descripcion) ||
+      (dto.subjects !== undefined &&
+        JSON.stringify(dto.subjects) !== JSON.stringify(tutor.subjects));
+
     if (dto.nombre !== undefined) tutor.nombre = dto.nombre;
     if (dto.apellido !== undefined) tutor.apellido = dto.apellido;
     if (dto.cedula !== undefined) tutor.cedula = dto.cedula;
     if (dto.descripcion !== undefined) tutor.descripcion = dto.descripcion;
     if (dto.bio !== undefined) tutor.bio = dto.bio;
     if (dto.subjects !== undefined) tutor.subjects = dto.subjects;
-    if (dto.precioHora !== undefined) tutor.precioHora = dto.precioHora;
-    if (dto.experienceYears !== undefined)
-      tutor.experienceYears = dto.experienceYears;
+    if (dto.disponible !== undefined)
+      tutor.disponible = dto.disponible;
 
     // City lives on UserEntity — update via clerkId.
     if (dto.ciudad !== undefined) {
@@ -348,7 +351,26 @@ export class TutorsService {
       }
     }
 
-    return this.tutorRepository.save(tutor);
+    const saved = await this.tutorRepository.save(tutor);
+
+    // Re-index all active courses when tutor-level text changes propagate to embeddings.
+    if (embeddingAffected) {
+      void this.courseRepository
+        .find({ where: { tutor: { id }, isActive: true }, select: ['id'] })
+        .then((courses) =>
+          Promise.all(
+            courses.map((c) =>
+              this.searchService.indexCourse(c.id).catch((err: any) =>
+                this.logger.warn(
+                  `[search] Failed to re-index course ${c.id} after tutor update: ${err?.message}`,
+                ),
+              ),
+            ),
+          ),
+        );
+    }
+
+    return saved;
   }
 
   async remove(id: string): Promise<void> {
@@ -367,6 +389,8 @@ export class TutorsService {
       tutor,
       subject: dto.subject,
       description: dto.description,
+      objectives: dto.objectives,
+      experienceYears: dto.experienceYears,
       price: dto.price,
       duration: dto.duration ?? 60,
       modalidad: dto.modalidad,
@@ -377,6 +401,9 @@ export class TutorsService {
     const saved = await this.courseRepository.save(course);
     this.logger.log(
       `[courses] Created course "${dto.subject}" for tutor ${tutor.id}`,
+    );
+    void this.searchService.indexCourse(saved.id).catch((err: any) =>
+      this.logger.warn(`[search] Failed to index course ${saved.id}: ${err?.message}`),
     );
     return saved;
   }
@@ -400,7 +427,11 @@ export class TutorsService {
     });
     if (!course) throw new NotFoundException('Curso no encontrado');
     Object.assign(course, partial);
-    return this.courseRepository.save(course);
+    const updated = await this.courseRepository.save(course);
+    void this.searchService.indexCourse(courseId).catch((err: any) =>
+      this.logger.warn(`[search] Failed to re-index course ${courseId}: ${err?.message}`),
+    );
+    return updated;
   }
 
   async deleteCourse(courseId: string, clerkId: string): Promise<void> {
@@ -436,6 +467,7 @@ export class TutorsService {
       duration: c.duration,
       modalidad: c.modalidad,
       academicLevel: c.academicLevel,
+      experienceYears: c.experienceYears,
       schedule: c.schedule ?? [],
       tutor: {
         id: c.tutor?.id,
@@ -477,7 +509,6 @@ export class TutorsService {
         apellido: course.tutor?.apellido,
         bio: course.tutor?.bio ?? course.tutor?.descripcion,
         rating: course.tutor?.rating,
-        experienceYears: course.tutor?.experienceYears,
         disponible: course.tutor?.disponible,
         subjects: course.tutor?.subjects,
         email: userRow?.email,

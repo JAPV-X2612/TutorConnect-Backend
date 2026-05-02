@@ -6,7 +6,6 @@ import {
   IsOptional,
   IsArray,
   IsEmail,
-  IsInt,
 } from 'class-validator';
 
 export class CreateTutorDto {
@@ -34,9 +33,4 @@ export class CreateTutorDto {
   @Expose()
   subjects?: string[];
 
-  @ApiPropertyOptional({ description: 'Años de experiencia', example: 2 })
-  @IsOptional()
-  @IsInt()
-  @Expose()
-  experienceYears?: number;
 }

@@ -49,6 +49,12 @@ export class TutorCourseEntity {
   @Column({ type: 'varchar', length: 100, nullable: true })
   academicLevel?: string;
 
+  @Column({ type: 'varchar', length: 500, nullable: true })
+  objectives?: string;
+
+  @Column({ type: 'int', nullable: true })
+  experienceYears?: number;
+
   @Column({ type: 'jsonb', nullable: true, default: [] })
   schedule: ScheduleSlot[];
 
