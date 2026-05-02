@@ -60,7 +60,7 @@ const AppDataSource = new DataSource({
 const TUTORS = [
   // ── Group A: STEM ──────────────────────────────────────────────────────────
   {
-    clerkId: 'demo_elena',
+    clerkId: 'user_3D9Foq1YFG5wb0Kf1euYTXK5FlT',
     email: 'elena.demo@tutorconnect.co',
     nombre: 'Elena',
     apellido: 'Rodríguez',
