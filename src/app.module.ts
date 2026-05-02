@@ -11,6 +11,7 @@ import { HealthModule } from './modules/health/health.module';
 import { WebhooksModule } from './modules/webhooks/webhooks.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { MessagingModule } from './modules/messaging/messaging.module';
+import { AdminModule } from './modules/admin/admin.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { MessagingModule } from './modules/messaging/messaging.module';
     WebhooksModule,
     DashboardModule,
     MessagingModule,
+    AdminModule,
   ],
   providers: [AppService],
 })
