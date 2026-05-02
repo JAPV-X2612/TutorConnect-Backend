@@ -19,6 +19,7 @@ const BOOKING_ID = '11111111-1111-1111-1111-111111111111';
 
 type MockRepo = {
   findOne: jest.Mock;
+  find: jest.Mock;
   create: jest.Mock;
   save: jest.Mock;
 };
@@ -26,6 +27,7 @@ type MockRepo = {
 function makeMockRepo(): MockRepo {
   return {
     findOne: jest.fn(),
+    find: jest.fn(),
     create: jest.fn(),
     save: jest.fn(),
   };
@@ -243,6 +245,83 @@ describe('ReviewsService', () => {
       ).rejects.toBeInstanceOf(ConflictException);
 
       expect(reviewRepo.findOne).not.toHaveBeenCalled();
+    });
+  });
+
+  // ── getMyReviews ──────────────────────────────────────────────────────────
+
+  describe('getMyReviews', () => {
+    it('returns the learner reviews mapped to ReviewResponseDto with bookingId from the joined booking', async () => {
+      userRepo.findOne.mockResolvedValue(buildLearner());
+      reviewRepo.find.mockResolvedValue([
+        {
+          id: 10,
+          rating: 5,
+          comment: 'Excelente',
+          createdAt: new Date('2026-05-02T15:00:00Z'),
+          booking: { id: BOOKING_ID },
+        },
+        {
+          id: 11,
+          rating: 3,
+          comment: null,
+          createdAt: new Date('2026-04-20T10:00:00Z'),
+          booking: { id: '22222222-2222-2222-2222-222222222222' },
+        },
+      ] as Partial<ReviewEntity>[]);
+
+      const result = await service.getMyReviews(LEARNER_CLERK_ID);
+
+      expect(result).toEqual([
+        {
+          id: 10,
+          bookingId: BOOKING_ID,
+          rating: 5,
+          comment: 'Excelente',
+          createdAt: new Date('2026-05-02T15:00:00Z'),
+        },
+        {
+          id: 11,
+          bookingId: '22222222-2222-2222-2222-222222222222',
+          rating: 3,
+          comment: null,
+          createdAt: new Date('2026-04-20T10:00:00Z'),
+        },
+      ]);
+    });
+
+    it('returns an empty array when the learner has no reviews', async () => {
+      userRepo.findOne.mockResolvedValue(buildLearner());
+      reviewRepo.find.mockResolvedValue([]);
+
+      const result = await service.getMyReviews(LEARNER_CLERK_ID);
+
+      expect(result).toEqual([]);
+    });
+
+    it('queries reviews ordered by createdAt DESC and scoped to the learner id', async () => {
+      userRepo.findOne.mockResolvedValue(buildLearner());
+      reviewRepo.find.mockResolvedValue([]);
+
+      await service.getMyReviews(LEARNER_CLERK_ID);
+
+      expect(reviewRepo.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { learner: { id: 1 } },
+          order: { createdAt: 'DESC' },
+          relations: expect.arrayContaining(['booking']),
+        }),
+      );
+    });
+
+    it('throws NotFound when the learner profile cannot be resolved', async () => {
+      userRepo.findOne.mockResolvedValue(null);
+
+      await expect(
+        service.getMyReviews(LEARNER_CLERK_ID),
+      ).rejects.toBeInstanceOf(NotFoundException);
+
+      expect(reviewRepo.find).not.toHaveBeenCalled();
     });
   });
 

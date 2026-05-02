@@ -100,6 +100,30 @@ export class ReviewsService {
   }
 
   /**
+   * Returns every review submitted by the authenticated learner across all of
+   * their bookings. Used by the sessions list to mark already-rated cards
+   * without issuing one request per card.
+   *
+   * @throws NotFoundException when the learner cannot be resolved.
+   */
+  async getMyReviews(
+    learnerClerkId: string,
+  ): Promise<ReviewResponseDto[]> {
+    const learner = await this.userRepository.findOne({
+      where: { clerkId: learnerClerkId },
+    });
+    if (!learner) throw new NotFoundException('Learner profile not found');
+
+    const reviews = await this.reviewRepository.find({
+      where: { learner: { id: learner.id } },
+      relations: ['booking'],
+      order: { createdAt: 'DESC' },
+    });
+
+    return reviews.map((r) => this.toResponse(r, r.booking.id));
+  }
+
+  /**
    * Returns the review submitted by the authenticated learner for the given
    * booking, or {@code null} when no review exists.
    *
