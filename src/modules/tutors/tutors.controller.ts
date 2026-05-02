@@ -133,6 +133,24 @@ export class TutorsController {
     return { key, ...presigned };
   }
 
+  // ── POST /tutors/me/certifications/confirm ───────────────────────────────
+
+  @Post('me/certifications/confirm')
+  @HttpCode(HttpStatus.CREATED)
+  @UseGuards(ClerkJwtGuard)
+  async confirmCertificationUpload(
+    @Body() body: { key: string; fileName: string; mimeType: string },
+    @Req() req: AuthenticatedRequest,
+  ) {
+    const { clerk_id } = req.user;
+    return this.tutorsService.confirmCertificationUpload(
+      clerk_id,
+      body.key,
+      body.fileName,
+      body.mimeType,
+    );
+  }
+
   // ── POST /tutors/me/certifications ───────────────────────────────────────
 
   @Post('me/certifications')
