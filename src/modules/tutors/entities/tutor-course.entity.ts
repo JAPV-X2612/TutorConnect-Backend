@@ -61,6 +61,11 @@ export class TutorCourseEntity {
   @Column({ type: 'boolean', default: true })
   isActive: boolean;
 
+  // pgvector type — TypeORM passes the string directly to PostgreSQL.
+  // Requires CREATE EXTENSION vector to be run before synchronize.
+  @Column({ type: 'vector' as any, nullable: true, select: false })
+  embedding?: string;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 
