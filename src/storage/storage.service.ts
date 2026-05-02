@@ -21,14 +21,15 @@ export class StorageService {
 
     this.client = new S3Client({
       region: process.env.AWS_REGION ?? 'us-east-1',
-      credentials: {
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID ?? '',
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY ?? '',
-        // Required for temporary credentials (AWS Academy / IAM roles)
-        ...(process.env.AWS_SESSION_TOKEN && {
-          sessionToken: process.env.AWS_SESSION_TOKEN,
-        }),
-      },
+      ...(process.env.AWS_ACCESS_KEY_ID && {
+        credentials: {
+          accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+          secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY ?? '',
+          ...(process.env.AWS_SESSION_TOKEN && {
+            sessionToken: process.env.AWS_SESSION_TOKEN,
+          }),
+        },
+      }),
     });
   }
 
