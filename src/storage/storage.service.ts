@@ -8,6 +8,7 @@ import {
   PutObjectCommand,
   GetObjectCommand,
 } from '@aws-sdk/client-s3';
+import { createPresignedPost } from '@aws-sdk/s3-presigned-post';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 @Injectable()
@@ -21,14 +22,15 @@ export class StorageService {
 
     this.client = new S3Client({
       region: process.env.AWS_REGION ?? 'us-east-1',
-      credentials: {
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID ?? '',
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY ?? '',
-        // Required for temporary credentials (AWS Academy / IAM roles)
-        ...(process.env.AWS_SESSION_TOKEN && {
-          sessionToken: process.env.AWS_SESSION_TOKEN,
-        }),
-      },
+      ...(process.env.AWS_ACCESS_KEY_ID && {
+        credentials: {
+          accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+          secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY ?? '',
+          ...(process.env.AWS_SESSION_TOKEN && {
+            sessionToken: process.env.AWS_SESSION_TOKEN,
+          }),
+        },
+      }),
     });
   }
 
@@ -50,6 +52,28 @@ export class StorageService {
     } catch (error) {
       this.logger.error(`Failed to upload ${key}`, error);
       throw new InternalServerErrorException('File upload failed');
+    }
+  }
+
+  async getPresignedUploadUrl(
+    key: string,
+    mimeType: string,
+    expiresIn = 300,
+  ): Promise<{ url: string; fields: Record<string, string> }> {
+    try {
+      return await createPresignedPost(this.client, {
+        Bucket: this.bucket,
+        Key: key,
+        Conditions: [
+          ['content-length-range', 0, 10 * 1024 * 1024],
+          ['eq', '$Content-Type', mimeType],
+        ],
+        Fields: { 'Content-Type': mimeType },
+        Expires: expiresIn,
+      });
+    } catch (error) {
+      this.logger.error(`Failed to generate presigned upload URL for ${key}`, error);
+      throw new InternalServerErrorException('Could not generate upload URL');
     }
   }
 
