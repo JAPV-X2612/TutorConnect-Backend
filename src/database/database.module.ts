@@ -19,6 +19,7 @@ import { DatabaseService } from './database.service';
         autoLoadEntities: true,
         synchronize: process.env.DATABASE_SYNCHRONIZE === 'true' || process.env.NODE_ENV !== 'production',
         logging: process.env.NODE_ENV !== 'production',
+        ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
       }),
     }),
   ],
