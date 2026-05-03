@@ -14,6 +14,8 @@ import type { Request } from 'express';
 import { IsDateString, IsOptional, IsString, IsUUID } from 'class-validator';
 import { BookingsService } from './bookings.service';
 import { ClerkJwtGuard } from '../auth/clerk-jwt.guard';
+import { RescheduleBookingDto } from './dtos/reschedule-booking.dto';
+import { ClerkRequestUser } from '../auth/clerk-jwt.guard';
 
 class CreateBookingDto {
   @IsUUID()
@@ -91,7 +93,25 @@ export class BookingsController {
   @HttpCode(HttpStatus.OK)
   @UseGuards(ClerkJwtGuard)
   async cancelBooking(@Param('id') id: string, @Req() req: Request) {
-    const { clerk_id } = (req as any).user;
+    const { clerk_id } = (req as Request & { user: ClerkRequestUser }).user;
     return this.bookingsService.cancelBooking(id, clerk_id);
+  }
+
+  // ── PATCH /bookings/:id/reschedule (learner reschedules) ─────────────────
+
+  @Patch(':id/reschedule')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(ClerkJwtGuard)
+  async rescheduleBooking(
+    @Param('id') id: string,
+    @Body() dto: RescheduleBookingDto,
+    @Req() req: Request,
+  ) {
+    const { clerk_id } = (req as Request & { user: ClerkRequestUser }).user;
+    return this.bookingsService.rescheduleBooking(
+      id,
+      clerk_id,
+      dto.newStartTime,
+    );
   }
 }
