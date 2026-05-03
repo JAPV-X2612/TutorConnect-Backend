@@ -64,7 +64,9 @@ export class BookingsService {
       confirmedOnly: true,
     });
     if (tutorConflict.conflict) {
-      throw new ConflictException('El tutor ya tiene una clase confirmada en ese horario');
+      throw new ConflictException(
+        'El tutor ya tiene una clase confirmada en ese horario',
+      );
     }
 
     // Block if this student already has any active booking (pending or confirmed) in this slot.
@@ -74,7 +76,9 @@ export class BookingsService {
       endTime,
     });
     if (studentConflict.conflict) {
-      throw new ConflictException('Ya tienes una clase reservada en ese horario');
+      throw new ConflictException(
+        'Ya tienes una clase reservada en ese horario',
+      );
     }
 
     const booking = this.bookingRepository.create({
@@ -161,7 +165,8 @@ export class BookingsService {
     }
 
     if (status === 'confirmed') {
-      if (!booking.endTime) throw new BadRequestException('Reserva sin hora de fin');
+      if (!booking.endTime)
+        throw new BadRequestException('Reserva sin hora de fin');
 
       // Ensure no confirmed booking already occupies this slot.
       const { conflict, who } = await this.hasConflict({
@@ -236,6 +241,101 @@ export class BookingsService {
     return result;
   }
 
+  // ── Learner reschedule ────────────────────────────────────────────────────
+
+  /**
+   * Moves an existing booking to a new time slot requested by the learner.
+   *
+   * If the booking was already confirmed, it reverts to pending so the tutor
+   * must re-confirm the new slot. The tutor is notified via WebSocket in both cases.
+   *
+   * @author Camilo Quintero, Jesús Pinzón, Laura Rodríguez, Santiago Díaz, Sergio Bejarano
+   * @version 1.0
+   * @since 2026-05-03
+   */
+  async rescheduleBooking(
+    bookingId: string,
+    learnerClerkId: string,
+    newStartTime: string,
+  ): Promise<object> {
+    const learner = await this.userRepository.findOne({
+      where: { clerkId: learnerClerkId },
+    });
+    if (!learner) throw new NotFoundException('Learner profile not found');
+
+    const booking = await this.bookingRepository.findOne({
+      where: { id: bookingId },
+      relations: ['student', 'tutor', 'course'],
+    });
+    if (!booking) throw new NotFoundException('Reserva no encontrada');
+    if (booking.student.id !== learner.id)
+      throw new ForbiddenException('Acceso denegado');
+    if (booking.status !== 'pending' && booking.status !== 'confirmed') {
+      throw new BadRequestException(
+        'Solo se pueden reprogramar reservas pendientes o confirmadas',
+      );
+    }
+
+    const startTime = new Date(newStartTime);
+    if (isNaN(startTime.getTime())) {
+      throw new BadRequestException('Fecha inválida');
+    }
+
+    // Preserve original session length when course is no longer linked.
+    const durationMs = booking.course
+      ? booking.course.duration * 60_000
+      : booking.endTime
+        ? booking.endTime.getTime() - booking.startTime.getTime()
+        : 60 * 60_000;
+
+    const endTime = new Date(startTime.getTime() + durationMs);
+
+    const tutorConflict = await this.hasConflict({
+      tutorId: booking.tutor.id,
+      startTime,
+      endTime,
+      excludeBookingId: booking.id,
+      confirmedOnly: true,
+    });
+    if (tutorConflict.conflict) {
+      throw new ConflictException(
+        'El tutor ya tiene una clase confirmada en ese horario',
+      );
+    }
+
+    const studentConflict = await this.hasConflict({
+      studentId: learner.id,
+      startTime,
+      endTime,
+      excludeBookingId: booking.id,
+    });
+    if (studentConflict.conflict) {
+      throw new ConflictException(
+        'Ya tienes una clase reservada en ese horario',
+      );
+    }
+
+    const previousStatus = booking.status;
+    booking.startTime = startTime;
+    booking.endTime = endTime;
+    // Confirmed booking reverts to pending — tutor must re-confirm the new slot.
+    if (booking.status === 'confirmed') {
+      booking.status = 'pending';
+    }
+
+    const saved = await this.bookingRepository.save(booking);
+    const result = this.formatBooking(saved, {
+      includeTutor: true,
+      includeCourse: true,
+    });
+    this.gateway.notifyTutor(booking.tutor.clerkId, {
+      ...result,
+      rescheduled: true,
+      previousStatus,
+    });
+    return result;
+  }
+
   // ── Conflict detection ────────────────────────────────────────────────────
 
   /**
@@ -252,7 +352,9 @@ export class BookingsService {
     excludeBookingId?: string;
     confirmedOnly?: boolean;
   }): Promise<{ conflict: boolean; who: 'tutor' | 'student' | null }> {
-    const statuses = opts.confirmedOnly ? ['confirmed'] : ['pending', 'confirmed'];
+    const statuses = opts.confirmedOnly
+      ? ['confirmed']
+      : ['pending', 'confirmed'];
 
     const qb = this.bookingRepository
       .createQueryBuilder('b')
