@@ -39,7 +39,7 @@ Read it fully before making any changes.
 | Real-time          | Socket.io via `@nestjs/websockets`                          |
 | Storage            | AWS S3 (`@aws-sdk/client-s3`)                               |
 | Push Notifications | Firebase Cloud Messaging                                    |
-| AI / Vector Search | Claude API + Voyage AI + Pinecone                           |
+| AI / Vector Search | Google Gemini API (embeddings) + pgvector                   |
 | Cache              | Redis                                                       |
 | Webhooks           | Svix (Clerk webhook signature verification)                 |
 | CI/CD              | GitHub Actions → AWS ECS Fargate                            |
@@ -89,7 +89,7 @@ src/
       gateways/messaging.gateway.ts
     payments/
     reviews/
-    search/                       # Stub — SearchService and SearchController are empty TODOs
+    search/                       # MOD-BUS-003 — semantic search + recommendations (Gemini + pgvector)
     tutors/
       entities/
         tutor-availability.entity.ts  # TutorAvailabilityEntity — recurring weekly slots
@@ -218,13 +218,11 @@ These issues exist in the current codebase and are targeted by active sprint tas
 
 6. **No `rejectionReason` field** on `BookingEntity` yet.
 
-7. **SearchModule is a stub** — `search.controller.ts` and `search.service.ts` are empty TODO files.
-
 ---
 
 ## Database Migrations
 
-**`synchronize: false` is enforced** in `src/data-source.ts` and must never be changed. Every schema change requires an explicit migration.
+**`synchronize: false` is the default** in both `src/data-source.ts` (TypeORM CLI) and `src/database/database.module.ts` (runtime). It can only be enabled via the `DATABASE_SYNCHRONIZE=true` environment variable — intended exclusively for local development bootstrap when no migrations exist yet. Every schema change in shared/production environments requires an explicit migration.
 
 ```bash
 # Generate migration (TypeORM diffs entity vs DB)
@@ -282,10 +280,19 @@ Active statuses (block availability slots): `PENDING_CONFIRMATION`, `CONFIRMED`.
 | `BookingsModule`  | `modules/bookings/`  | ClerkJwtGuard  | Booking lifecycle + WebSocket gateway                   |
 | `DashboardModule` | `modules/dashboard/` | ClerkJwtGuard  | Metrics for tutor and learner dashboards                |
 | `MessagingModule` | `modules/messaging/` | ClerkJwtGuard  | Real-time chat channels via Socket.io                   |
-| `SearchModule`    | `modules/search/`    | ClerkJwtGuard  | Tutor search — stub, Pinecone AI search to be added     |
+| `SearchModule`    | `modules/search/`    | Partial (see below) | Semantic search (public) + recommendations (ClerkJwtGuard) |
 | `WebhooksModule`  | `modules/webhooks/`  | Svix signature | Clerk webhook events (user.created, user.updated)       |
 | `HealthModule`    | `modules/health/`    | None           | `GET /health` liveness probe                            |
 | `StorageModule`   | `storage/`           | —              | AWS S3 upload/presign service                           |
+
+Search module guard breakdown:
+- `GET /api/search?q=...` — **public** (no auth required)
+- `POST /api/search/index` — **public** (admin bootstrap)
+- `GET /api/search/recommendations` — **ClerkJwtGuard** (requires authenticated learner)
+
+Admin module (no guards — internal/dev use only):
+- `POST /api/admin/seed` — populates demo tutors, courses, and learners
+- `POST /api/admin/index` — batch-indexes all active courses into pgvector
 
 Modules to be created (Sprint 5):
 
@@ -321,8 +328,8 @@ Frontend connects to the Socket.io server using the Clerk JWT for authentication
 
 ### Database
 
-- `synchronize: false` — never change this.
-- Every schema change requires an explicit migration generated with TypeORM CLI.
+- `synchronize: false` is the default — only override via `DATABASE_SYNCHRONIZE=true` in local dev `.env`.
+- Every schema change in shared environments requires an explicit migration generated with TypeORM CLI.
 - Migrations are append-only — never modify an existing migration file.
 - After generating a migration, review it before running.
 - Register new entities in `src/data-source.ts`.
@@ -360,13 +367,16 @@ NODE_ENV=development
 CORS_ORIGINS=http://localhost:8081,http://localhost:19006
 
 # Database
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/tutorconnect
-# Or individual fields:
 DATABASE_HOST=localhost
 DATABASE_PORT=5432
 DATABASE_NAME=tutorconnect
 DATABASE_USER=postgres
-DATABASE_PASSWORD=postgres
+DATABASE_PASSWORD=postgres123
+# Or set a full URL (takes precedence):
+# DATABASE_URL=postgresql://postgres:postgres123@localhost:5432/tutorconnect
+
+# Set to "true" only for local dev bootstrap (no migrations). Leave empty otherwise.
+DATABASE_SYNCHRONIZE=
 
 # Clerk (Authentication)
 CLERK_SECRET_KEY=
@@ -375,7 +385,7 @@ CLERK_WEBHOOK_SECRET=
 # AWS S3
 AWS_ACCESS_KEY_ID=
 AWS_SECRET_ACCESS_KEY=
-AWS_REGION=
+AWS_REGION=us-east-1
 AWS_S3_BUCKET=
 
 # Firebase Cloud Messaging
@@ -386,15 +396,8 @@ FIREBASE_CLIENT_EMAIL=
 # Redis
 REDIS_URL=redis://localhost:6379
 
-# Pinecone Vector DB
-PINECONE_API_KEY=
-PINECONE_INDEX_NAME=tutor-connect-tutors
-
-# Voyage AI Embeddings
-VOYAGE_API_KEY=
-
-# Claude API
-ANTHROPIC_API_KEY=
+# Google Gemini (AI embeddings for semantic search — https://aistudio.google.com)
+GEMINI_API_KEY=
 ```
 
 ---
@@ -418,31 +421,48 @@ Required on all public service classes and methods:
 ## Local Development
 
 ```bash
-# Start PostgreSQL via Docker
-docker-compose -f docker-compose.local.yml up -d
+# Start PostgreSQL + pgvector via Docker (uses docker-compose.dev.yml)
+npm run docker:dev
 
 # Install dependencies
 npm install
 
-# Run migrations
+# Option A — schema via migrations (preferred when migrations exist)
 npm run migration:run -- -d src/data-source.ts
+
+# Option B — schema via synchronize (local bootstrap only, no migrations yet)
+# Add DATABASE_SYNCHRONIZE=true to .env, then start the server directly.
 
 # Start dev server with hot reload
 npm run start:dev
+
+# Populate demo data (tutors, courses, learners)
+# curl -X POST http://localhost:3000/api/admin/seed
+
+# Index courses into pgvector for AI search (requires GEMINI_API_KEY)
+# curl -X POST http://localhost:3000/api/admin/index
 
 # Run tests
 npm test
 npm run test:cov
 ```
 
+**Ngrok (required for Clerk webhooks in local dev):**
+```bash
+ngrok http 3000
+# Configure the Clerk webhook URL as: https://<ngrok-url>/api/webhooks/clerk
+# Events to subscribe: user.created, user.updated
+```
+
 ---
 
 ## What Not to Do
 
-- Never set `synchronize: true` in `data-source.ts` or in `DatabaseModule`.
+- Never hardcode `synchronize: true` in `data-source.ts` or `DatabaseModule` — use the `DATABASE_SYNCHRONIZE` env var for local dev only.
 - Never hardcode credentials — read all secrets from `ConfigService`.
 - Never block the HTTP response waiting for a push notification — fire-and-forget.
 - Never use `any` types — define proper TypeScript interfaces.
 - Never remove WebSocket `notifyTutor()` / `notifyLearner()` calls when adding Firebase push — they are complementary.
 - Never modify an existing migration file — create a new one.
 - Never read `clerkId` from `req.user.clerkId` — the actual field is `req.user.clerk_id`.
+- Never duplicate `app.setGlobalPrefix()` or `app.enableCors()` calls in `main.ts` — both must appear exactly once.
