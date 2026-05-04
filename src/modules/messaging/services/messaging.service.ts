@@ -10,6 +10,7 @@ import { MessagingDBService } from '../../../database/dbservices/messaging.dbser
 import { UsersDBService } from '../../../database/dbservices/users.dbservice';
 import { TutorCourseEntity } from '../../tutors/entities/tutor-course.entity';
 import { UserRole } from '../../../common/enums/user-role.enum';
+import { FirebaseService } from '../../firebase/firebase.service';
 
 const CHAT_EXPIRY_MS = 24 * 60 * 60 * 1000; // 24 hours
 
@@ -69,6 +70,7 @@ export class MessagingService {
     private readonly usersDB: UsersDBService,
     @InjectRepository(TutorCourseEntity)
     private readonly courseRepo: Repository<TutorCourseEntity>,
+    private readonly firebase: FirebaseService,
   ) {}
 
   /**
@@ -226,6 +228,19 @@ export class MessagingService {
       sender,
       content,
     );
+
+    // Push notification to the other participant (fire-and-forget).
+    const receiverClerkId =
+      channel.tutor.clerkId === senderClerkId
+        ? channel.learner.clerkId
+        : channel.tutor.clerkId;
+    void this.pushMessageNotification(
+      receiverClerkId,
+      `${sender.firstName} ${sender.lastName}`,
+      content,
+      channel.id,
+    );
+
     return {
       id: message.id,
       content: message.content,
@@ -237,6 +252,25 @@ export class MessagingService {
         lastName: sender.lastName,
       },
     };
+  }
+
+  private async pushMessageNotification(
+    receiverClerkId: string,
+    senderName: string,
+    content: string,
+    channelId: number,
+  ): Promise<void> {
+    const receiver = await this.usersDB.repository.findOne({
+      where: { clerkId: receiverClerkId },
+    });
+    if (!receiver?.fcmToken || receiver.notificationsEnabled === false) return;
+
+    const preview =
+      content.length > 80 ? `${content.slice(0, 77)}...` : content;
+    await this.firebase.sendPush(receiver.fcmToken, senderName, preview, {
+      type: 'message',
+      channelId: String(channelId),
+    });
   }
 
   /** Used by the gateway to validate channel access before joining a room. */
