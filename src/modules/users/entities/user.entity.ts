@@ -97,7 +97,12 @@ export class UserEntity {
   @Column({ name: 'interests', type: 'jsonb', nullable: true })
   interests?: string[] | null;
 
-  @Column({ name: 'learning_goal', type: 'varchar', length: 500, nullable: true })
+  @Column({
+    name: 'learning_goal',
+    type: 'varchar',
+    length: 500,
+    nullable: true,
+  })
   learningGoal?: string | null;
 
   /** 'universitario' | 'colegial' | 'profesional' | 'otro' */
@@ -124,6 +129,14 @@ export class UserEntity {
 
   @Column({ name: 'hourly_rate', type: 'float', nullable: true })
   hourlyRate?: number | null;
+
+  // Push notifications
+
+  @Column({ name: 'fcm_token', type: 'varchar', length: 512, nullable: true })
+  fcmToken?: string | null;
+
+  @Column({ name: 'notifications_enabled', type: 'boolean', default: true })
+  notificationsEnabled: boolean;
 
   // Relations
 

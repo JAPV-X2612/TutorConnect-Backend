@@ -5,6 +5,7 @@ import {
   forwardRef,
   Inject,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -14,9 +15,12 @@ import { UserEntity } from '../users/entities/user.entity';
 import { TutorEntity } from '../../database/entities/tutor.entity';
 import { TutorCourseEntity } from '../tutors/entities/tutor-course.entity';
 import { BookingsGateway } from './bookings.gateway';
+import { FirebaseService } from '../firebase/firebase.service';
 
 @Injectable()
 export class BookingsService {
+  private readonly logger = new Logger(BookingsService.name);
+
   constructor(
     @InjectRepository(BookingEntity)
     private readonly bookingRepository: Repository<BookingEntity>,
@@ -28,6 +32,7 @@ export class BookingsService {
     private readonly courseRepository: Repository<TutorCourseEntity>,
     @Inject(forwardRef(() => BookingsGateway))
     private readonly gateway: BookingsGateway,
+    private readonly firebase: FirebaseService,
   ) {}
 
   // ── POST /bookings ────────────────────────────────────────────────────────
@@ -98,8 +103,14 @@ export class BookingsService {
       includeTutor: true,
       includeCourse: true,
     });
-    // Notify tutor that a new booking request arrived.
+    // Notify tutor via WebSocket + FCM (fire-and-forget).
     this.gateway.notifyTutor(course.tutor.clerkId, result);
+    void this.pushToTutor(
+      course.tutor.clerkId,
+      'Nueva solicitud de sesión',
+      `${learner.firstName} ${learner.lastName} quiere una sesión de ${course.subject}`,
+      { type: 'booking', bookingId: saved.id },
+    );
     return result;
   }
 
@@ -203,8 +214,19 @@ export class BookingsService {
       includeLearner: true,
       includeCourse: true,
     });
-    // Notify learner that the tutor responded.
+    // Notify learner via WebSocket + FCM (fire-and-forget).
     this.gateway.notifyLearner(booking.student.clerkId, result);
+    const subject = booking.subject ?? 'tu sesión';
+    const pushTitle =
+      status === 'confirmed' ? 'Sesión confirmada' : 'Solicitud rechazada';
+    const pushBody =
+      status === 'confirmed'
+        ? `Tu sesión de ${subject} fue confirmada`
+        : `El tutor no pudo confirmar tu sesión de ${subject}`;
+    void this.pushToUser(booking.student, pushTitle, pushBody, {
+      type: 'booking',
+      bookingId: booking.id,
+    });
     return result;
   }
 
@@ -236,8 +258,15 @@ export class BookingsService {
       includeTutor: true,
       includeCourse: true,
     });
-    // Notify tutor that the learner cancelled.
+    // Notify tutor via WebSocket + FCM (fire-and-forget).
     this.gateway.notifyTutor(booking.tutor.clerkId, result);
+    const subject = booking.subject ?? 'la sesión';
+    void this.pushToTutor(
+      booking.tutor.clerkId,
+      'Sesión cancelada',
+      `El aprendiz canceló la sesión de ${subject}`,
+      { type: 'booking', bookingId: booking.id },
+    );
     return result;
   }
 
@@ -468,5 +497,32 @@ export class BookingsService {
           }
         : {}),
     };
+  }
+
+  // ── Push notification helpers ─────────────────────────────────────────────
+
+  /** Sends FCM to a UserEntity if they have a token and notifications enabled. */
+  private async pushToUser(
+    user: UserEntity,
+    title: string,
+    body: string,
+    data: Record<string, string>,
+  ): Promise<void> {
+    if (!user.fcmToken || user.notificationsEnabled === false) return;
+    await this.firebase.sendPush(user.fcmToken, title, body, data);
+  }
+
+  /** Looks up the UserEntity for a tutor by clerkId, then sends FCM. */
+  private async pushToTutor(
+    tutorClerkId: string,
+    title: string,
+    body: string,
+    data: Record<string, string>,
+  ): Promise<void> {
+    const tutorUser = await this.userRepository.findOne({
+      where: { clerkId: tutorClerkId },
+    });
+    if (!tutorUser) return;
+    await this.pushToUser(tutorUser, title, body, data);
   }
 }
