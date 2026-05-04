@@ -128,10 +128,14 @@ export class UsersService {
     if (dto.academicProgram !== undefined)
       user.academicProgram = dto.academicProgram || null;
     if (dto.interests !== undefined) user.interests = dto.interests;
-    if (dto.learningGoal !== undefined) user.learningGoal = dto.learningGoal || null;
-    if (dto.studentType !== undefined) user.studentType = dto.studentType || null;
-    if (dto.currentSemester !== undefined) user.currentSemester = dto.currentSemester ?? null;
-    if (dto.schoolGrade !== undefined) user.schoolGrade = dto.schoolGrade ?? null;
+    if (dto.learningGoal !== undefined)
+      user.learningGoal = dto.learningGoal || null;
+    if (dto.studentType !== undefined)
+      user.studentType = dto.studentType || null;
+    if (dto.currentSemester !== undefined)
+      user.currentSemester = dto.currentSemester ?? null;
+    if (dto.schoolGrade !== undefined)
+      user.schoolGrade = dto.schoolGrade ?? null;
     return this.usersDBService.repository.save(user);
   }
 
@@ -165,5 +169,38 @@ export class UsersService {
    */
   async findByClerkId(clerkId: string): Promise<UserEntity | null> {
     return this.usersDBService.repository.findOne({ where: { clerkId } });
+  }
+
+  /**
+   * Updates the FCM registration token for the authenticated user's device.
+   *
+   * Passing null clears the token (e.g. on logout), preventing stale pushes.
+   *
+   * @author Camilo Quintero, Jesús Pinzón, Laura Rodríguez, Santiago Díaz, Sergio Bejarano
+   * @version 1.0
+   * @since 2026-05-03
+   */
+  async updateFcmToken(
+    clerkId: string,
+    fcmToken: string | null,
+  ): Promise<void> {
+    await this.usersDBService.repository.update({ clerkId }, { fcmToken });
+  }
+
+  /**
+   * Toggles push notification preference for the authenticated user.
+   *
+   * @author Camilo Quintero, Jesús Pinzón, Laura Rodríguez, Santiago Díaz, Sergio Bejarano
+   * @version 1.0
+   * @since 2026-05-03
+   */
+  async updateNotificationsEnabled(
+    clerkId: string,
+    enabled: boolean,
+  ): Promise<void> {
+    await this.usersDBService.repository.update(
+      { clerkId },
+      { notificationsEnabled: enabled },
+    );
   }
 }

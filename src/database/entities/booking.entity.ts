@@ -55,4 +55,10 @@ export class BookingEntity {
 
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
+
+  @Column({ name: 'reminder_24h_sent_at', type: 'timestamp', nullable: true })
+  reminder24hSentAt?: Date | null;
+
+  @Column({ name: 'reminder_1h_sent_at', type: 'timestamp', nullable: true })
+  reminder1hSentAt?: Date | null;
 }
