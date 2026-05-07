@@ -232,9 +232,9 @@ export class AdminMetricsService {
       .getRawMany<{ rating: string; count: string }>();
 
     const total = distributionRaw.reduce((acc, r) => acc + Number(r.count), 0);
-    const promoters = Number(distributionRaw.find((r) => r.rating === '5')?.count ?? 0);
+    const promoters = Number(distributionRaw.find((r) => Number(r.rating) === 5)?.count ?? 0);
     const detractors = distributionRaw
-      .filter((r) => r.rating === '1' || r.rating === '2')
+      .filter((r) => Number(r.rating) <= 2)
       .reduce((acc, r) => acc + Number(r.count), 0);
 
     const npsScore = total > 0 ? Math.round(((promoters - detractors) / total) * 100) : 0;
