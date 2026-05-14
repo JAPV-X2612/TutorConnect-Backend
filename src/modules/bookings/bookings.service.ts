@@ -14,6 +14,8 @@ import { BookingEntity } from '../../database/entities/booking.entity';
 import { UserEntity } from '../users/entities/user.entity';
 import { TutorEntity } from '../../database/entities/tutor.entity';
 import { TutorCourseEntity } from '../tutors/entities/tutor-course.entity';
+import { PaymentEntity } from '../payments/entities/payment.entity';
+import { PaymentStatus } from '../../common/enums/payment-status.enum';
 import { BookingsGateway } from './bookings.gateway';
 import { FirebaseService } from '../firebase/firebase.service';
 
@@ -30,6 +32,8 @@ export class BookingsService {
     private readonly tutorRepository: Repository<TutorEntity>,
     @InjectRepository(TutorCourseEntity)
     private readonly courseRepository: Repository<TutorCourseEntity>,
+    @InjectRepository(PaymentEntity)
+    private readonly paymentRepository: Repository<PaymentEntity>,
     @Inject(forwardRef(() => BookingsGateway))
     private readonly gateway: BookingsGateway,
     private readonly firebase: FirebaseService,
@@ -37,11 +41,16 @@ export class BookingsService {
 
   // ── POST /bookings ────────────────────────────────────────────────────────
 
+  /**
+   * @param skipTutorNotification When true (payment flow), suppresses the
+   *   real-time WebSocket notification to the tutor. FCM push is still sent.
+   */
   async createBooking(
     learnerClerkId: string,
     courseId: string,
     scheduledAt: string,
     notes?: string,
+    skipTutorNotification = false,
   ): Promise<object> {
     const learner = await this.userRepository.findOne({
       where: { clerkId: learnerClerkId },
@@ -103,8 +112,10 @@ export class BookingsService {
       includeTutor: true,
       includeCourse: true,
     });
-    // Notify tutor via WebSocket + FCM (fire-and-forget).
-    this.gateway.notifyTutor(course.tutor.clerkId, result);
+    // Notify tutor via WebSocket (skipped in payment flow) + FCM (always, fire-and-forget).
+    if (!skipTutorNotification) {
+      this.gateway.notifyTutor(course.tutor.clerkId, result);
+    }
     void this.pushToTutor(
       course.tutor.clerkId,
       'Nueva solicitud de sesión',
@@ -200,6 +211,8 @@ export class BookingsService {
     booking.status = status;
     const saved = await this.bookingRepository.save(booking);
 
+    if (status === 'cancelled') await this.refundPaymentIfExists(bookingId);
+
     // Auto-cancel other pending requests from different students in the same slot.
     if (status === 'confirmed' && booking.endTime) {
       await this.cancelOverlappingPending(
@@ -254,6 +267,7 @@ export class BookingsService {
 
     booking.status = 'cancelled';
     const saved = await this.bookingRepository.save(booking);
+    await this.refundPaymentIfExists(bookingId);
     const result = this.formatBooking(saved, {
       includeTutor: true,
       includeCourse: true,
@@ -447,6 +461,16 @@ export class BookingsService {
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────
+
+  private async refundPaymentIfExists(bookingId: string): Promise<void> {
+    const payment = await this.paymentRepository.findOne({
+      where: { booking: { id: bookingId }, status: PaymentStatus.COMPLETED },
+    });
+    if (payment) {
+      payment.status = PaymentStatus.REFUNDED;
+      await this.paymentRepository.save(payment);
+    }
+  }
 
   private formatBooking(
     b: BookingEntity,

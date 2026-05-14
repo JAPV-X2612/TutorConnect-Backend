@@ -50,6 +50,7 @@ async function bootstrap() {
   );
 
   const allowedOrigins = [
+    'http://localhost:3001',
     'http://localhost:8081',
     'http://localhost:8082',
     'http://localhost:19000',

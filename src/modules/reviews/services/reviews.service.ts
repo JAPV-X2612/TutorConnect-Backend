@@ -11,6 +11,7 @@ import { BookingEntity } from '../../../database/entities/booking.entity';
 import { UserEntity } from '../../users/entities/user.entity';
 import { CreateReviewDto } from '../dtos/requests/create-review.dto';
 import { ReviewResponseDto } from '../dtos/responses/review.response.dto';
+import { TutorReviewSummaryDto } from '../dtos/responses/tutor-review-summary.dto';
 
 /**
  * Domain service handling the lifecycle of session reviews submitted by
@@ -159,6 +160,48 @@ export class ReviewsService {
     });
 
     return review ? this.toResponse(review, bookingId) : null;
+  }
+
+  /**
+   * Returns an aggregate review summary for the authenticated tutor:
+   * average rating, total count, distribution per star, and 5 most recent reviews.
+   *
+   * @author TutorConnect Team
+   * @version 1.0
+   * @since 2026-05-13
+   */
+  async getTutorReviewSummary(tutorClerkId: string): Promise<TutorReviewSummaryDto> {
+    const tutor = await this.userRepository.findOne({ where: { clerkId: tutorClerkId } });
+    if (!tutor) throw new NotFoundException('Tutor profile not found');
+
+    const reviews = await this.reviewRepository.find({
+      where: { tutor: { id: tutor.id }, deletedAt: IsNull() },
+      relations: ['learner', 'booking', 'booking.course'],
+      order: { createdAt: 'DESC' },
+    });
+
+    const totalReviews = reviews.length;
+    const distribution: Record<string, number> = { '1': 0, '2': 0, '3': 0, '4': 0, '5': 0 };
+    let ratingSum = 0;
+
+    for (const r of reviews) {
+      ratingSum += r.rating;
+      distribution[String(r.rating)] = (distribution[String(r.rating)] ?? 0) + 1;
+    }
+
+    const averageRating =
+      totalReviews > 0 ? Math.round((ratingSum / totalReviews) * 10) / 10 : 0;
+
+    const recentReviews = reviews.slice(0, 5).map((r) => ({
+      id: r.id,
+      rating: r.rating,
+      comment: r.comment,
+      learnerName: `${r.learner.firstName} ${r.learner.lastName}`,
+      subject: r.booking?.course?.subject ?? r.booking?.subject ?? '',
+      createdAt: r.createdAt,
+    }));
+
+    return { averageRating, totalReviews, ratingDistribution: distribution, recentReviews };
   }
 
   private toResponse(review: ReviewEntity, bookingId: string): ReviewResponseDto {

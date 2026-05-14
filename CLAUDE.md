@@ -398,6 +398,16 @@ REDIS_URL=redis://localhost:6379
 
 # Google Gemini (AI embeddings for semantic search — https://aistudio.google.com)
 GEMINI_API_KEY=
+
+# Pinecone Vector DB (legacy)
+PINECONE_API_KEY=
+PINECONE_INDEX_NAME=tutor-connect-tutors
+
+# Voyage AI Embeddings (legacy)
+VOYAGE_API_KEY=
+
+# Claude API
+ANTHROPIC_API_KEY=
 ```
 
 ---
