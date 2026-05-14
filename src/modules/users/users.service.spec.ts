@@ -29,6 +29,7 @@ const mockUser = (): UserEntity => ({
   createdAt: new Date(),
   updatedAt: new Date(),
   deletedAt: null,
+  notificationsEnabled: true,
   learnerPreferences: [],
 });
 

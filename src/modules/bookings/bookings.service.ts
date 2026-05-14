@@ -5,6 +5,7 @@ import {
   forwardRef,
   Inject,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -13,10 +14,15 @@ import { BookingEntity } from '../../database/entities/booking.entity';
 import { UserEntity } from '../users/entities/user.entity';
 import { TutorEntity } from '../../database/entities/tutor.entity';
 import { TutorCourseEntity } from '../tutors/entities/tutor-course.entity';
+import { PaymentEntity } from '../payments/entities/payment.entity';
+import { PaymentStatus } from '../../common/enums/payment-status.enum';
 import { BookingsGateway } from './bookings.gateway';
+import { FirebaseService } from '../firebase/firebase.service';
 
 @Injectable()
 export class BookingsService {
+  private readonly logger = new Logger(BookingsService.name);
+
   constructor(
     @InjectRepository(BookingEntity)
     private readonly bookingRepository: Repository<BookingEntity>,
@@ -26,17 +32,25 @@ export class BookingsService {
     private readonly tutorRepository: Repository<TutorEntity>,
     @InjectRepository(TutorCourseEntity)
     private readonly courseRepository: Repository<TutorCourseEntity>,
+    @InjectRepository(PaymentEntity)
+    private readonly paymentRepository: Repository<PaymentEntity>,
     @Inject(forwardRef(() => BookingsGateway))
     private readonly gateway: BookingsGateway,
+    private readonly firebase: FirebaseService,
   ) {}
 
   // ── POST /bookings ────────────────────────────────────────────────────────
 
+  /**
+   * @param skipTutorNotification When true (payment flow), suppresses the
+   *   real-time WebSocket notification to the tutor. FCM push is still sent.
+   */
   async createBooking(
     learnerClerkId: string,
     courseId: string,
     scheduledAt: string,
     notes?: string,
+    skipTutorNotification = false,
   ): Promise<object> {
     const learner = await this.userRepository.findOne({
       where: { clerkId: learnerClerkId },
@@ -64,7 +78,9 @@ export class BookingsService {
       confirmedOnly: true,
     });
     if (tutorConflict.conflict) {
-      throw new ConflictException('El tutor ya tiene una clase confirmada en ese horario');
+      throw new ConflictException(
+        'El tutor ya tiene una clase confirmada en ese horario',
+      );
     }
 
     // Block if this student already has any active booking (pending or confirmed) in this slot.
@@ -74,7 +90,9 @@ export class BookingsService {
       endTime,
     });
     if (studentConflict.conflict) {
-      throw new ConflictException('Ya tienes una clase reservada en ese horario');
+      throw new ConflictException(
+        'Ya tienes una clase reservada en ese horario',
+      );
     }
 
     const booking = this.bookingRepository.create({
@@ -94,8 +112,16 @@ export class BookingsService {
       includeTutor: true,
       includeCourse: true,
     });
-    // Notify tutor that a new booking request arrived.
-    this.gateway.notifyTutor(course.tutor.clerkId, result);
+    // Notify tutor via WebSocket (skipped in payment flow) + FCM (always, fire-and-forget).
+    if (!skipTutorNotification) {
+      this.gateway.notifyTutor(course.tutor.clerkId, result);
+    }
+    void this.pushToTutor(
+      course.tutor.clerkId,
+      'Nueva solicitud de sesión',
+      `${learner.firstName} ${learner.lastName} quiere una sesión de ${course.subject}`,
+      { type: 'booking', bookingId: saved.id },
+    );
     return result;
   }
 
@@ -161,7 +187,8 @@ export class BookingsService {
     }
 
     if (status === 'confirmed') {
-      if (!booking.endTime) throw new BadRequestException('Reserva sin hora de fin');
+      if (!booking.endTime)
+        throw new BadRequestException('Reserva sin hora de fin');
 
       // Ensure no confirmed booking already occupies this slot.
       const { conflict, who } = await this.hasConflict({
@@ -184,6 +211,8 @@ export class BookingsService {
     booking.status = status;
     const saved = await this.bookingRepository.save(booking);
 
+    if (status === 'cancelled') await this.refundPaymentIfExists(bookingId);
+
     // Auto-cancel other pending requests from different students in the same slot.
     if (status === 'confirmed' && booking.endTime) {
       await this.cancelOverlappingPending(
@@ -198,8 +227,19 @@ export class BookingsService {
       includeLearner: true,
       includeCourse: true,
     });
-    // Notify learner that the tutor responded.
+    // Notify learner via WebSocket + FCM (fire-and-forget).
     this.gateway.notifyLearner(booking.student.clerkId, result);
+    const subject = booking.subject ?? 'tu sesión';
+    const pushTitle =
+      status === 'confirmed' ? 'Sesión confirmada' : 'Solicitud rechazada';
+    const pushBody =
+      status === 'confirmed'
+        ? `Tu sesión de ${subject} fue confirmada`
+        : `El tutor no pudo confirmar tu sesión de ${subject}`;
+    void this.pushToUser(booking.student, pushTitle, pushBody, {
+      type: 'booking',
+      bookingId: booking.id,
+    });
     return result;
   }
 
@@ -227,12 +267,115 @@ export class BookingsService {
 
     booking.status = 'cancelled';
     const saved = await this.bookingRepository.save(booking);
+    await this.refundPaymentIfExists(bookingId);
     const result = this.formatBooking(saved, {
       includeTutor: true,
       includeCourse: true,
     });
-    // Notify tutor that the learner cancelled.
+    // Notify tutor via WebSocket + FCM (fire-and-forget).
     this.gateway.notifyTutor(booking.tutor.clerkId, result);
+    const subject = booking.subject ?? 'la sesión';
+    void this.pushToTutor(
+      booking.tutor.clerkId,
+      'Sesión cancelada',
+      `El aprendiz canceló la sesión de ${subject}`,
+      { type: 'booking', bookingId: booking.id },
+    );
+    return result;
+  }
+
+  // ── Learner reschedule ────────────────────────────────────────────────────
+
+  /**
+   * Moves an existing booking to a new time slot requested by the learner.
+   *
+   * If the booking was already confirmed, it reverts to pending so the tutor
+   * must re-confirm the new slot. The tutor is notified via WebSocket in both cases.
+   *
+   * @author Camilo Quintero, Jesús Pinzón, Laura Rodríguez, Santiago Díaz, Sergio Bejarano
+   * @version 1.0
+   * @since 2026-05-03
+   */
+  async rescheduleBooking(
+    bookingId: string,
+    learnerClerkId: string,
+    newStartTime: string,
+  ): Promise<object> {
+    const learner = await this.userRepository.findOne({
+      where: { clerkId: learnerClerkId },
+    });
+    if (!learner) throw new NotFoundException('Learner profile not found');
+
+    const booking = await this.bookingRepository.findOne({
+      where: { id: bookingId },
+      relations: ['student', 'tutor', 'course'],
+    });
+    if (!booking) throw new NotFoundException('Reserva no encontrada');
+    if (booking.student.id !== learner.id)
+      throw new ForbiddenException('Acceso denegado');
+    if (booking.status !== 'pending' && booking.status !== 'confirmed') {
+      throw new BadRequestException(
+        'Solo se pueden reprogramar reservas pendientes o confirmadas',
+      );
+    }
+
+    const startTime = new Date(newStartTime);
+    if (isNaN(startTime.getTime())) {
+      throw new BadRequestException('Fecha inválida');
+    }
+
+    // Preserve original session length when course is no longer linked.
+    const durationMs = booking.course
+      ? booking.course.duration * 60_000
+      : booking.endTime
+        ? booking.endTime.getTime() - booking.startTime.getTime()
+        : 60 * 60_000;
+
+    const endTime = new Date(startTime.getTime() + durationMs);
+
+    const tutorConflict = await this.hasConflict({
+      tutorId: booking.tutor.id,
+      startTime,
+      endTime,
+      excludeBookingId: booking.id,
+      confirmedOnly: true,
+    });
+    if (tutorConflict.conflict) {
+      throw new ConflictException(
+        'El tutor ya tiene una clase confirmada en ese horario',
+      );
+    }
+
+    const studentConflict = await this.hasConflict({
+      studentId: learner.id,
+      startTime,
+      endTime,
+      excludeBookingId: booking.id,
+    });
+    if (studentConflict.conflict) {
+      throw new ConflictException(
+        'Ya tienes una clase reservada en ese horario',
+      );
+    }
+
+    const previousStatus = booking.status;
+    booking.startTime = startTime;
+    booking.endTime = endTime;
+    // Confirmed booking reverts to pending — tutor must re-confirm the new slot.
+    if (booking.status === 'confirmed') {
+      booking.status = 'pending';
+    }
+
+    const saved = await this.bookingRepository.save(booking);
+    const result = this.formatBooking(saved, {
+      includeTutor: true,
+      includeCourse: true,
+    });
+    this.gateway.notifyTutor(booking.tutor.clerkId, {
+      ...result,
+      rescheduled: true,
+      previousStatus,
+    });
     return result;
   }
 
@@ -252,7 +395,9 @@ export class BookingsService {
     excludeBookingId?: string;
     confirmedOnly?: boolean;
   }): Promise<{ conflict: boolean; who: 'tutor' | 'student' | null }> {
-    const statuses = opts.confirmedOnly ? ['confirmed'] : ['pending', 'confirmed'];
+    const statuses = opts.confirmedOnly
+      ? ['confirmed']
+      : ['pending', 'confirmed'];
 
     const qb = this.bookingRepository
       .createQueryBuilder('b')
@@ -317,6 +462,16 @@ export class BookingsService {
 
   // ── Helpers ───────────────────────────────────────────────────────────────
 
+  private async refundPaymentIfExists(bookingId: string): Promise<void> {
+    const payment = await this.paymentRepository.findOne({
+      where: { booking: { id: bookingId }, status: PaymentStatus.COMPLETED },
+    });
+    if (payment) {
+      payment.status = PaymentStatus.REFUNDED;
+      await this.paymentRepository.save(payment);
+    }
+  }
+
   private formatBooking(
     b: BookingEntity,
     opts: {
@@ -366,5 +521,32 @@ export class BookingsService {
           }
         : {}),
     };
+  }
+
+  // ── Push notification helpers ─────────────────────────────────────────────
+
+  /** Sends FCM to a UserEntity if they have a token and notifications enabled. */
+  private async pushToUser(
+    user: UserEntity,
+    title: string,
+    body: string,
+    data: Record<string, string>,
+  ): Promise<void> {
+    if (!user.fcmToken || user.notificationsEnabled === false) return;
+    await this.firebase.sendPush(user.fcmToken, title, body, data);
+  }
+
+  /** Looks up the UserEntity for a tutor by clerkId, then sends FCM. */
+  private async pushToTutor(
+    tutorClerkId: string,
+    title: string,
+    body: string,
+    data: Record<string, string>,
+  ): Promise<void> {
+    const tutorUser = await this.userRepository.findOne({
+      where: { clerkId: tutorClerkId },
+    });
+    if (!tutorUser) return;
+    await this.pushToUser(tutorUser, title, body, data);
   }
 }

@@ -7,6 +7,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -14,6 +15,8 @@ import type { Request } from 'express';
 import { IsDateString, IsOptional, IsString, IsUUID } from 'class-validator';
 import { BookingsService } from './bookings.service';
 import { ClerkJwtGuard } from '../auth/clerk-jwt.guard';
+import { RescheduleBookingDto } from './dtos/reschedule-booking.dto';
+import { ClerkRequestUser } from '../auth/clerk-jwt.guard';
 
 class CreateBookingDto {
   @IsUUID()
@@ -41,13 +44,18 @@ export class BookingsController {
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @UseGuards(ClerkJwtGuard)
-  async create(@Body() dto: CreateBookingDto, @Req() req: Request) {
-    const { clerk_id } = (req as any).user;
+  async create(
+    @Body() dto: CreateBookingDto,
+    @Req() req: Request,
+    @Query('paymentFlow') paymentFlow?: string,
+  ) {
+    const { clerk_id } = (req as Request & { user: ClerkRequestUser }).user;
     return this.bookingsService.createBooking(
       clerk_id,
       dto.courseId,
       dto.scheduledAt,
       dto.notes,
+      paymentFlow === 'true',
     );
   }
 
@@ -57,7 +65,7 @@ export class BookingsController {
   @HttpCode(HttpStatus.OK)
   @UseGuards(ClerkJwtGuard)
   async getLearnerBookings(@Req() req: Request) {
-    const { clerk_id } = (req as any).user;
+    const { clerk_id } = (req as Request & { user: ClerkRequestUser }).user;
     return this.bookingsService.getLearnerBookings(clerk_id);
   }
 
@@ -67,7 +75,7 @@ export class BookingsController {
   @HttpCode(HttpStatus.OK)
   @UseGuards(ClerkJwtGuard)
   async getTutorBookings(@Req() req: Request) {
-    const { clerk_id } = (req as any).user;
+    const { clerk_id } = (req as Request & { user: ClerkRequestUser }).user;
     return this.bookingsService.getTutorBookings(clerk_id);
   }
 
@@ -81,7 +89,7 @@ export class BookingsController {
     @Body() dto: RespondBookingDto,
     @Req() req: Request,
   ) {
-    const { clerk_id } = (req as any).user;
+    const { clerk_id } = (req as Request & { user: ClerkRequestUser }).user;
     return this.bookingsService.respondToBooking(id, clerk_id, dto.status);
   }
 
@@ -91,7 +99,25 @@ export class BookingsController {
   @HttpCode(HttpStatus.OK)
   @UseGuards(ClerkJwtGuard)
   async cancelBooking(@Param('id') id: string, @Req() req: Request) {
-    const { clerk_id } = (req as any).user;
+    const { clerk_id } = (req as Request & { user: ClerkRequestUser }).user;
     return this.bookingsService.cancelBooking(id, clerk_id);
+  }
+
+  // ── PATCH /bookings/:id/reschedule (learner reschedules) ─────────────────
+
+  @Patch(':id/reschedule')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(ClerkJwtGuard)
+  async rescheduleBooking(
+    @Param('id') id: string,
+    @Body() dto: RescheduleBookingDto,
+    @Req() req: Request,
+  ) {
+    const { clerk_id } = (req as Request & { user: ClerkRequestUser }).user;
+    return this.bookingsService.rescheduleBooking(
+      id,
+      clerk_id,
+      dto.newStartTime,
+    );
   }
 }
