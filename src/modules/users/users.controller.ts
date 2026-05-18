@@ -205,28 +205,4 @@ export class UsersController {
     await this.usersService.remove(id);
   }
 
-  /** Registers or clears the FCM device token for push notifications. */
-  @Patch('me/fcm-token')
-  @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: 'Register or refresh FCM push token' })
-  async updateFcmToken(
-    @Body() body: { fcmToken: string | null },
-    @Req() req: AuthenticatedRequest,
-  ): Promise<void> {
-    await this.usersService.updateFcmToken(req.user.clerk_id, body.fcmToken);
-  }
-
-  /** Enables or disables push notifications for the authenticated user. */
-  @Patch('me/notifications')
-  @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: 'Toggle push notification preference' })
-  async updateNotifications(
-    @Body() body: { enabled: boolean },
-    @Req() req: AuthenticatedRequest,
-  ): Promise<void> {
-    await this.usersService.updateNotificationsEnabled(
-      req.user.clerk_id,
-      body.enabled,
-    );
-  }
 }

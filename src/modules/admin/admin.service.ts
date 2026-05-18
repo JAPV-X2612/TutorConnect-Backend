@@ -265,4 +265,31 @@ export class AdminService {
     const result = await this.searchService.batchIndexAll();
     return result;
   }
+
+  async getAdminMetrics(
+    from?: string,
+    to?: string,
+  ): Promise<{
+    totalUsers: number;
+    totalTutors: number;
+    totalLearners: number;
+    totalCourses: number;
+    period: { from: string | null; to: string | null };
+  }> {
+    const [totalUsers, totalTutors, totalLearners, totalCourses] =
+      await Promise.all([
+        this.userRepo.count(),
+        this.userRepo.count({ where: { role: UserRole.TUTOR } }),
+        this.userRepo.count({ where: { role: UserRole.LEARNER } }),
+        this.courseRepo.count({ where: { isActive: true } }),
+      ]);
+
+    return {
+      totalUsers,
+      totalTutors,
+      totalLearners,
+      totalCourses,
+      period: { from: from ?? null, to: to ?? null },
+    };
+  }
 }
