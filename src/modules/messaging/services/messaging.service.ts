@@ -311,7 +311,7 @@ export class MessagingService {
   ): ChannelResponse {
     const isCallerTutor = channel.tutor.clerkId === callerClerkId;
     const other = isCallerTutor ? channel.learner : channel.tutor;
-    const lastMsg = (channel as any).lastMessage ?? null;
+    const lastMsg = (channel as { lastMessage?: { content: string; sentAt: Date; sender?: { clerkId: string } } }).lastMessage ?? null;
 
     return {
       id: channel.id,

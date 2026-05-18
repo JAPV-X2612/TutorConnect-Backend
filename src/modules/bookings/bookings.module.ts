@@ -7,6 +7,7 @@ import { BookingEntity } from '../../database/entities/booking.entity';
 import { UserEntity } from '../users/entities/user.entity';
 import { TutorEntity } from '../../database/entities/tutor.entity';
 import { TutorCourseEntity } from '../tutors/entities/tutor-course.entity';
+import { PaymentEntity } from '../payments/entities/payment.entity';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { TutorCourseEntity } from '../tutors/entities/tutor-course.entity';
       UserEntity,
       TutorEntity,
       TutorCourseEntity,
+      PaymentEntity,
     ]),
   ],
   controllers: [BookingsController],

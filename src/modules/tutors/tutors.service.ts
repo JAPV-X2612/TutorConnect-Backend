@@ -7,7 +7,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { QueryFailedError, Repository } from 'typeorm';
 import { randomUUID } from 'crypto';
 import { TutorEntity } from '../../database/entities/tutor.entity';
 import { CertificacionEntity } from '../../database/entities/certificacion.entity';
@@ -120,7 +120,15 @@ export class TutorsService {
       estado: EstadoTutor.PENDIENTE,
     });
 
-    const saved = await this.tutorRepository.save(tutor);
+    let saved: TutorEntity;
+    try {
+      saved = await this.tutorRepository.save(tutor);
+    } catch (err) {
+      if (err instanceof QueryFailedError && (err as any).code === '23505') {
+        throw new ConflictException('Ya existe un tutor registrado con ese email');
+      }
+      throw err;
+    }
 
     // Upsert into UserEntity — handles both "webhook arrived" and "webhook not yet" cases.
     const existingUser = await this.userRepository.findOne({

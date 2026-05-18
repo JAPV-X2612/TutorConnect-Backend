@@ -1,4 +1,11 @@
-import { Controller, Post, HttpCode, HttpStatus } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  HttpCode,
+  HttpStatus,
+  Query,
+} from '@nestjs/common';
 import { AdminService } from './admin.service';
 
 @Controller('admin')
@@ -17,5 +24,14 @@ export class AdminController {
   async index() {
     const result = await this.adminService.runIndex();
     return { ok: true, ...result };
+  }
+
+  @Get('metrics')
+  @HttpCode(HttpStatus.OK)
+  async getMetrics(
+    @Query('from') from: string,
+    @Query('to') to: string,
+  ) {
+    return this.adminService.getAdminMetrics(from, to);
   }
 }

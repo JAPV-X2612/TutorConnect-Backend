@@ -16,6 +16,7 @@ import { ClerkJwtGuard, ClerkRequestUser } from '../../auth/clerk-jwt.guard';
 import { ReviewsService } from '../services/reviews.service';
 import { CreateReviewDto } from '../dtos/requests/create-review.dto';
 import { ReviewResponseDto } from '../dtos/responses/review.response.dto';
+import { TutorReviewSummaryDto } from '../dtos/responses/tutor-review-summary.dto';
 
 type AuthenticatedRequest = Request & { user: ClerkRequestUser };
 
@@ -56,6 +57,17 @@ export class ReviewsController {
   async getMine(@Req() req: AuthenticatedRequest): Promise<ReviewResponseDto[]> {
     const { clerk_id } = req.user;
     return this.reviewsService.getMyReviews(clerk_id);
+  }
+
+  // ── GET /reviews/tutor/summary ────────────────────────────────────────────
+
+  @Get('tutor/summary')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(ClerkJwtGuard)
+  @ApiOperation({ summary: "Aggregate review summary for the authenticated tutor." })
+  async getTutorSummary(@Req() req: AuthenticatedRequest): Promise<TutorReviewSummaryDto> {
+    const { clerk_id } = req.user;
+    return this.reviewsService.getTutorReviewSummary(clerk_id);
   }
 
   // ── GET /reviews/booking/:bookingId ───────────────────────────────────────
