@@ -56,15 +56,7 @@ export class UsersController {
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   async getMe(@Req() req: AuthenticatedRequest): Promise<UserDto> {
     const { clerk_id } = req.user;
-    const user = await this.usersService.findByClerkId(clerk_id);
-    if (!user) {
-      throw new NotFoundException(
-        'No platform profile found for this identity',
-      );
-    }
-    // Spread the TypeORM entity into a plain object. class-transformer with
-    // `excludeExtraneousValues: true` requires a plain-object source to map
-    // properties by name; passing the entity instance directly returns `{}`.
+    const user = await this.usersService.findOrCreateFromClerk(clerk_id);
     return plainToInstance(
       UserDto,
       { ...user },

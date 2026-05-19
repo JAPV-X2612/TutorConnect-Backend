@@ -5,6 +5,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { createClerkClient } from '@clerk/backend';
 import { UsersDBService } from '../../database/dbservices/users.dbservice';
 import { UserEntity } from './entities/user.entity';
 import { CreateUserDto } from './dtos/create-user.dto';
@@ -169,6 +170,63 @@ export class UsersService {
    */
   async findByClerkId(clerkId: string): Promise<UserEntity | null> {
     return this.usersDBService.repository.findOne({ where: { clerkId } });
+  }
+
+  /**
+   * Returns the platform profile for clerkId, creating it on first access
+   * when the Clerk webhook hasn't fired yet (e.g. local dev without ngrok).
+   * The Clerk API is only called once — subsequent requests hit the DB.
+   * Re-links by email if the same address exists with a different clerkId.
+   *
+   * @author TutorConnect Team
+   * @version 1.0
+   * @since 2026-05-18
+   */
+  async findOrCreateFromClerk(clerkId: string): Promise<UserEntity> {
+    const existing = await this.findByClerkId(clerkId);
+    if (existing) return existing;
+
+    const clerk = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
+    const clerkUser = await clerk.users.getUser(clerkId);
+
+    const primaryEmail =
+      clerkUser.emailAddresses.find(
+        (e) => e.id === clerkUser.primaryEmailAddressId,
+      )?.emailAddress ??
+      clerkUser.emailAddresses[0]?.emailAddress ??
+      '';
+
+    if (primaryEmail) {
+      const byEmail = await this.usersDBService.repository.findOne({
+        where: { email: primaryEmail },
+      });
+      if (byEmail) {
+        byEmail.clerkId = clerkId;
+        byEmail.firstName = clerkUser.firstName || byEmail.firstName;
+        byEmail.lastName = clerkUser.lastName || byEmail.lastName;
+        return this.usersDBService.repository.save(byEmail);
+      }
+    }
+
+    const user = this.usersDBService.repository.create({
+      clerkId,
+      email: primaryEmail,
+      firstName: clerkUser.firstName ?? '',
+      lastName: clerkUser.lastName ?? '',
+      role: UserRole.LEARNER,
+    });
+
+    try {
+      return await this.usersDBService.repository.save(user);
+    } catch (error: unknown) {
+      const pgError = error as { code?: string };
+      if (pgError?.code === '23505') {
+        // Concurrent request or webhook created the row between our check and insert
+        const created = await this.findByClerkId(clerkId);
+        if (created) return created;
+      }
+      throw error;
+    }
   }
 
   /**
